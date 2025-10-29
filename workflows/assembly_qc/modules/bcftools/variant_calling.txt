@@ -1,0 +1,65 @@
+
+
+
+
+
+# 2b- Align ONT reads on the assembly
+minimap2 -cx map-ont --cs -a "${REF_FASTA}" "${ONT_READS}" \
+  | samtools sort -o ${REF_FASTA//.fasta/}.ont.bam - \
+  && samtools index ${REF_FASTA//.fasta/}.ont.bam
+
+
+# 3- Use illumna reads to call variants relatively to bc13 consensus
+bcftools mpileup --no-BAQ -Q5 --max-BQ 30 --indel-size 1000 \
+  	--ff=UNMAP --ambig-reads=drop --gap-frac=0 --min-ireads=0 --per-sample-mF \
+    -a FORMAT/AD,FORMAT/ADF,FORMAT/ADR \
+  	--fasta-ref="${REF_FASTA}" "SRR12304303.bc13.bam" \
+	| bcftools filter -Ou -i 'DP>=20 && (I16[2] > DP*0.1) && (I16[3] > DP*0.1)' \
+	| bcftools norm -Ou -m- -f "${REF_FASTA}" \
+	| bcftools filter -Ou -i '(FORMAT/ADF[:1] >= DP*0.1) && (FORMAT/ADR[:1] >= DP*0.1)' \
+	| bcftools filter -Oz --exclude 'POS==1365031' \
+> bc13_vs_illumina.vcf.gz
+
+bcftools consensus -s - -f ${REF_FASTA} bc13_vs_illumina.vcf.gz > paper/bc13_illumina_polished.fasta
+
+
+
+# 3- Call variants between ONT reads and assembly
+samtools faidx ${REF_FASTA}
+# bcftools mpileup -Ou --threads 4 --no-BAQ -Q5 --max-BQ 30 -I --indel-size 10 \
+#   	--ambig-reads=drop --gap-frac=0 --min-ireads=0 --per-sample-mF \
+#     -a FORMAT/AD,FORMAT/ADF,FORMAT/ADR \
+#   	--fasta-ref="${REF_FASTA}" "${REF_FASTA//.fasta/}.ont.bam"
+bcftools mpileup -Ou --threads 7 -Q5 \
+  	--ambig-reads=drop --gap-frac=0.01 --min-ireads=5 --per-sample-mF \
+    -a FORMAT/AD,FORMAT/ADF,FORMAT/ADR \
+  	--fasta-ref="${REF_FASTA}" "${REF_FASTA//.fasta/}.ont.bam" \
+  | bcftools filter -Ou -i 'DP>=5 && (I16[2]+I16[3] > DP*0.5)' \
+  | bcftools norm -Ou -m- -f "${REF_FASTA}" \
+  | bcftools filter -Ou -i '(FORMAT/AD[:1] >= 0.5*DP)' \
+  | bcftools view -Oz \
+  | bcftools filter --exclude 'POS==357144' \
+  | bcftools filter --exclude 'POS==894897' \
+  | bcftools view -Oz \
+  > bc12_vs_bc01.vcf.gz
+bcftools index -f bc12_vs_bc01.vcf.gz
+
+
+
+# 4a- Call variants between two assemblies
+NCBI_FASTA=paper/bc12_illumina_polished.fasta
+minimap2 -cx asm5 -z1000000 -p 0.1 -Y --cs -a "${NCBI_FASTA}" "${REF_FASTA}" \
+  | samtools sort - \
+  | bcftools mpileup -Ou --no-BAQ --indel-size 1000 \
+  	--ff=UNMAP --ambig-reads=drop --gap-frac=0 --min-ireads=0 --per-sample-mF \
+    -a FORMAT/AD,FORMAT/ADF,FORMAT/ADR \
+  	--fasta-ref="${NCBI_FASTA}" - \
+	| bcftools norm -Ou -m- -f "${NCBI_FASTA}" \
+  | bcftools filter -Ou -i '(FORMAT/AD[:1] >= 1)' \
+  | bcftools query -f "%CHROM\t%POS\t%REF>%ALT" \
+  > paper/bc12_vs_bc01.txt
+#  | bcftools view
+  
+  
+
+

@@ -1,0 +1,17 @@
+
+title: "Sequencing QC"
+subtitle: ""
+intro_text: ""
+report_comment: "This report gives a set of metrics computed directly on short-reads and long-reads to check the quality of the sequencing"
+
+run_modules:
+  - nanostat
+  - fastqc
+
+extra_fn_clean_trim:
+  - ".nanostat"
+
+sp:
+  nanostat:
+    fn: "*.nanostat"
+ 

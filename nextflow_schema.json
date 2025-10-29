@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+	"oneOf": [
+		{"required": ["samplesheet"], "not":{"required":["long_reads"]}},
+		{"required": ["long_reads"], "not":{"required":["samplesheet"]}}
+	],
+  
+  "properties": {
+  	
+		"samplesheet": { 
+			"type": "string",
+			"format": "file-path",
+			"pattern": "^\\S+\\.(csv)$",
+			"description": "Path to a CSV file containing the sample sheet."
+		},
+		
+		"long_reads": {
+			"type": "string",
+			"format": "file-path",
+			"pattern": "^\\S+\\.(bam|fastq\\.gz|fq\\.gz)$",
+			"description": "Path to BAM or FASTQ.GZ files containing ONT reads"
+		},
+		
+		"assembler": {
+			"title": "Reads Assembly Parameters",
+			"type": "object",
+			"required": [],
+			"properties": {
+				"spades_short": {
+					"type": "boolean",
+					"default": false
+				},
+				"short_unicycler": {
+					"type": "boolean",
+					"default": false
+				},
+				"long_flye_medaka": {
+					"type": "boolean",
+					"default": false
+				},
+				"long_hybracter": {
+					"type": "boolean",
+					"default": false
+				},
+				"long_unicycler": {
+					"type": "boolean",
+					"default": false
+				},
+				"hybrid_hybracter": {
+					"type": "boolean",
+					"default": false
+				},
+				"hybrid_unicycler": {
+					"type": "boolean",
+					"default": false
+				},
+				"hybrid_flye_medaka_pilon": {
+					"type": "boolean",
+					"default": false
+				}
+			}
+		},
+		
+		"annot": {
+			"title": "Control reads annotation tools",
+      "type": "object",
+			"required": [],
+      "properties": {
+        "skip_plasmidfinder_longread": {
+          "type": "boolean",
+          "description": "Should PLASMIDFINDER be skipped on the long reads",
+          "default": false
+        },
+        "skip_resfinder_longread": { 
+          "type": "boolean",
+          "description": "Should RESFINDER be skipped on the long reads",
+          "default": false
+        },
+        "skip_plasmidfinder_shortread": { 
+          "type": "boolean",
+          "description": "Should PLASMIDFINDER be skipped on the short reads",
+          "default": false
+        },
+        "skip_resfinder_shortread": { 
+          "type": "boolean",
+          "description": "Should RESFINDER be skipped on the short reads",
+          "default": false
+        },
+        "skip_cgemlst": { 
+          "type": "boolean",
+          "description": "Should MLST (from CGE) be skipped",
+          "default": false
+        },
+        
+        
+        "skip_MLST": { 
+          "type": "boolean",
+          "description": "Should MLST (from TSEEMANN) be skipped",
+          "default": false
+        },
+        "skip_prokka": {
+          "type": "boolean",
+          "description": "Should PROKKA be skipped",
+          "default": true
+        },
+        "default_prokka_args": { 
+          "type": "string",
+          "description": "Default arguments to use for PROKKA",
+		  		"default": "--kingdom Bacteria"
+        },
+        "skip_resfinder": {
+          "type": "boolean",
+          "description": "Should RESFINDER be skipped",
+          "default": false
+        },
+        "skip_amrfinderplus": {
+          "type": "boolean",
+          "description": "Should AMRFINDERPLUS be skipped",
+          "default": false
+        },
+        "skip_plasmidfinder": {
+          "type": "boolean",
+          "description": "Should PLASMIDFINDER be skipped",
+          "default": false
+        },
+        "skip_mobtyper": {
+          "type": "boolean",
+          "description": "Should MOBTYPER be skipped",
+          "default": false
+        },
+        "skip_speciator": {
+          "type": "boolean",
+          "description": "Should SPECIATOR be skipped (only available on HPC)",
+          "default": true
+        }
+      }
+		}
+		
+  }
+  
+}
+
+
