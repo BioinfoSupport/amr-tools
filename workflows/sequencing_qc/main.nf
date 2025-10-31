@@ -2,6 +2,7 @@
 include { ORGANIZE_FILES } from './modules/organize_files'
 include { NANOPLOT       } from './modules/nanoplot'
 include { FASTQC         } from './modules/fastqc'
+include { FASTP          } from './modules/fastp'
 include { MULTIQC        } from './modules/multiqc'
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
@@ -20,7 +21,11 @@ workflow SEQUENCING_QC {
 		// Run FASTQC
 		// WARNING: similarly to above, it should run once on each FASTQ and then expand to all inputs
 		//          but it is not possible as we need to give sample_id to have correct sample names for MULTIQC
-		FASTQC(fqs_ch.map({meta,x -> [meta,x,meta.sample_id]}))
+		FASTP(fqs_ch.map({m,x -> [x,x]}).unique())
+		fastp_json_ch = fqs_ch.combine(FASTP.out.json,by:[1,0]).map({m,x,y -> [m,y]})
+		fastp_html_ch = fqs_ch.combine(FASTP.out.html,by:[1,0]).map({m,x,y -> [m,y]})
+		
+		//FASTQC(fqs_ch.map({meta,x -> [meta,x,meta.sample_id]}))
 
 		// MultiQC
 		ORGANIZE_FILES(
@@ -36,8 +41,10 @@ workflow SEQUENCING_QC {
 	emit:
 		long_nanoplot     = nanoplot_ch
 		long_nanostat     = nanostat_ch
-		short_fastqc_html = FASTQC.out.html
-		short_fastqc_zip  = FASTQC.out.zip
+		//short_fastqc_html = FASTQC.out.html
+		//short_fastqc_zip  = FASTQC.out.zip
+		short_fastp_json    = fastp_json_ch
+		short_fastp_html    = fastp_html_ch
 		multiqc_html      = MULTIQC.out.html.map({m,x -> x})
 }
 
