@@ -76,7 +76,7 @@ workflow {
 			meta_map.combine(ss.lr_ch,by:0).map({m1,m2,x -> [m2,x]})
 		)
 		
-		ANNOTATE_ASSEMBLY(params.annot,asm_ch,ss.lr_ch,ss.sr_ch)	
+		//ANNOTATE_ASSEMBLY(params.annot,Channel.empty(),ss.lr_ch,ss.sr_ch)	
 		
 
 	publish:

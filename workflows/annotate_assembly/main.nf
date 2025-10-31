@@ -14,7 +14,7 @@ include { AMRFINDERPLUS_RUN                        } from './modules/amrfinderpl
 include { PROKKA_RUN                               } from './modules/tseemann/prokka'
 include { MLST                                     } from './modules/tseemann/mlst'
 include { MLST as CGEMLST                          } from './modules/cgetools/mlst'
-include { MOBTYPER_RUN                             } from './modules/mobsuite/mobtyper'
+include { MOBTYPER_RUN                             } from './modules/mobsuite/mobtyper.nf'
 include { SAMTOOLS_FAIDX                           } from './modules/samtools/faidx'
 include { MULTIREPORT                              } from './subworkflows/multireport'
 

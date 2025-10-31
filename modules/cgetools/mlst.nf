@@ -13,5 +13,9 @@ process MLST {
 				mkdir -p mlst/ tmp/
 				mlst.py -p ${task.ext.args?:''} '/db/mlst_db' -i '${assembly_fna}' -o 'mlst/' ${args} --tmp_dir 'tmp/' -x
 		    """
+		stub:
+		"""
+		mkdir -p mlst
+		"""
 }
 

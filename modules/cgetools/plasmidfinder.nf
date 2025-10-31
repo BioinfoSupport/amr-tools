@@ -13,6 +13,11 @@ process PLASMIDFINDER {
 	  		mkdir -p plasmidfinder
 		  	plasmidfinder.py ${task.ext.args?:''} -q -x -p /db/plasmidfinder_db -i ${seq.join(' ')} -o 'plasmidfinder/'
 		    """
+		stub:
+		"""
+		mkdir -p plasmidfinder
+		"""
+		    
 }
 
 

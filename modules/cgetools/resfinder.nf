@@ -20,6 +20,10 @@ process RESFINDER {
     		}
 		    """
 				python -m resfinder ${task.ext.args?:''} ${input} --kma_threads ${task.cpus} -acq -d -j resfinder/data.json -o 'resfinder/'
-		    """    
+		    """
+		stub:
+		"""
+		mkdir -p resfinder
+		"""
 }
 
