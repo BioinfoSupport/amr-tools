@@ -52,7 +52,7 @@ workflow SEQUENCING_QC {
 
 workflow {
 	main:
-		println("TEST")
+		println(param.toString())
 	publish:
 		seq_multiqc = Channel.empty() //SEQUENCING_QC.out.multiqc_html
 }
