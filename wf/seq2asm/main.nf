@@ -81,92 +81,37 @@ workflow {
 
 		// Extract Long_read and Short_read channels from params 
 		fa_ch = Channel.empty()
-		lr_ch = Channel.empty()
-		sr_ch = Channel.empty()
+		fql_ch = Channel.empty()
+		fqs_ch = Channel.empty()
 		if (params.samplesheet) {
 				SS = Channel.fromList(samplesheetToList(params.samplesheet, "assets/schema_samplesheet.json"))
 					.multiMap({x ->
 						meta = [sample_id:x[0].sample_id,assembly_name:x[0].assembly_name]
 						fa_ch: [meta,x[0].assembly_fasta]
-						lr_ch: [meta,x[0].long_reads]
-						sr_ch: [meta,[x[0].short_reads_1,x[0].short_reads_2]]
+						fql_ch: [meta,x[0].long_reads]
+						fqs_ch: [meta,[x[0].short_reads_1,x[0].short_reads_2]]
 					})
 				fa_ch = SS.fa_ch
-				lr_ch = SS.lr_ch
-				sr_ch = SS.sr_ch
+				fql_ch = SS.fql_ch
+				fqs_ch = SS.fqs_ch
 		} else {
 			fa_ch = Channel.fromPath(params.fasta)
 				.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,''),assembly_name:'fasta'],x]})
 		}
-		
-		// Filter out missing values
-		fa_ch = fa_ch.filter({x,y -> y})
-		
 
 		SEQ2ASM(params,fqs_ch,fql_ch)
 
 	publish:
-		orgfinder           = AMR_ANNOT.out.orgfinder
-		amrfinderplus       = AMR_ANNOT.out.amrfinderplus
-		resfinder           = AMR_ANNOT.out.resfinder
-		mobtyper            = AMR_ANNOT.out.mobtyper
-		plasmidfinder       = AMR_ANNOT.out.plasmidfinder
-		cgemlst             = AMR_ANNOT.out.cgemlst
-		MLST                = AMR_ANNOT.out.MLST
-		prokka              = AMR_ANNOT.out.prokka
-		resfinder_long      = AMR_ANNOT.out.resfinder_long
-		resfinder_short     = AMR_ANNOT.out.resfinder_short
-		plasmidfinder_long  = AMR_ANNOT.out.plasmidfinder_long
-		plasmidfinder_short = AMR_ANNOT.out.plasmidfinder_short
-		
-  	multireport_html    = AMR_ANNOT.out.html_report
-  	multireport_xlsx    = AMR_ANNOT.out.xlsx_report
+		fasta            = SEQ2ASM.out.fasta
+		assembler_output = SEQ2ASM.out.dir
 }
 
 output {
-	orgfinder {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/orgfinder"}
+	fasta {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/assembly.fasta"}
 	}
-	amrfinderplus {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/amrfinderplus"}
-	}
-	resfinder {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/resfinder"}
-	}
-	mobtyper {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/mobtyper"}
-	}
-	plasmidfinder {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/plasmidfinder"}
-	}
-	cgemlst {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/cgemlst"}
-	}
-	MLST {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/MLST"}
-	}
-	prokka {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/prokka"}
-	}
-	
-	resfinder_long {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/resfinder_long"}
-	}
-	resfinder_short {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/resfinder_short"}
-	}
-	plasmidfinder_long {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/plasmidfinder_long"}
-	}
-	plasmidfinder_short {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/plasmidfinder_short"}
-	}
-	
-	multireport_html {
-		path { it >> "./amr_annot.html" }
-	}
-	multireport_xlsx {
-		path { it >> "./amr_annot.xlsx" }
+	assembler_output {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/assembler"}
 	}
 }
 

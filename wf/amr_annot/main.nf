@@ -127,11 +127,11 @@ workflow AMR_ANNOT_ASSEMBLY {
 
 	emit:
 			orgfinder           = orgfinder_ch.orgfinder
-			orgname             = AMR_ANNOT_ASSEMBLY_FOR_ORG.out.org_name
 			amrfinderplus       = amrfinderplus_ch
 			resfinder           = resfinder_ch
 			mobtyper            = mobtyper_ch
 			plasmidfinder       = plasmidfinder_ch
+			org_name            = ann_ch.org_name			
 			cgemlst             = ann_ch.cgemlst
 			MLST                = ann_ch.MLST
 			prokka              = ann_ch.prokka
@@ -172,7 +172,7 @@ workflow AMR_ANNOT {
 		MULTIREPORT(
 			asm_ch,
 			fai_ch,
-			AMR_ANNOT_ASSEMBLY.out.orgname,
+			AMR_ANNOT_ASSEMBLY.out.org_name,
 			AMR_ANNOT_ASSEMBLY.out.orgfinder,
 			AMR_ANNOT_ASSEMBLY.out.amrfinderplus,
 			AMR_ANNOT_ASSEMBLY.out.resfinder,
