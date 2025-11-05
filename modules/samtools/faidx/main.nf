@@ -7,7 +7,7 @@ process SAMTOOLS_FAIDX {
     input:
     		tuple val(meta), path(fasta)
     output:
-    		tuple val(meta), path ("*.fasta.fai")
+    		tuple val(meta), path ("*.fai")
     script:
 		    """
 		    samtools faidx ${task.ext.args?:''} $fasta
