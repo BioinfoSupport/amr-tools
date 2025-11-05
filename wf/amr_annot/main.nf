@@ -296,8 +296,8 @@ workflow {
 		plasmidfinder_long  = AMR_ANNOT.out.plasmidfinder_long
 		plasmidfinder_short = AMR_ANNOT.out.plasmidfinder_short
 		
-  	multireport_html    = AMR_ANNOT.out.html_report
-  	multireport_xlsx    = AMR_ANNOT.out.xlsx_report
+  	multireport_html    = AMR_ANNOT.out.multireport_html
+  	multireport_xlsx    = AMR_ANNOT.out.multireport_xlsx
 }
 
 output {
