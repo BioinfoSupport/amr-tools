@@ -6,8 +6,8 @@ process FASTP {
     input:
 	    tuple val(meta), path(reads)
     output:
-	    tuple val(meta), path('*.json')           , emit: json
-	    tuple val(meta), path('*.html')           , emit: html
+	    tuple val(meta), path('output.fastp.json'), emit: json
+	    tuple val(meta), path('output.fastp.html'), emit: html
     script:
     	if (reads.size()==1) {
 		    """
@@ -28,4 +28,8 @@ process FASTP {
 		        ${task.ext.args?:''}
 		    """    		
     	}
+    stub:
+	    """
+	    touch output.fastp.json output.fastp.html
+	    """
 }

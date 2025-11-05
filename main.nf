@@ -64,18 +64,21 @@ workflow {
 			ss.lr_ch.filter({!params.skip_seq_qc}),
 			ss.sr_ch.filter({!params.skip_seq_qc})
 		)
-		
+
 		// de novo read assembly
-    ASSEMBLE_READS(params.assembler,ss.sr_ch,ss.lr_ch)
+    //ASSEMBLE_READS(params.assembler,ss.sr_ch,ss.lr_ch)
+    ASSEMBLE_READS = [out: [fasta: Channel.empty(),dir: Channel.empty()]]
     
 		// Assembly QC
+		/*
 		meta_map = ASSEMBLE_READS.out.fasta.map({m1,m2,fa -> [m1,m1+m2]})
 		ASSEMBLY_QC(
 			ASSEMBLE_READS.out.fasta.map({m1,m2,fa -> [m1+m2,fa]}),
 			meta_map.combine(ss.sr_ch,by:0).map({m1,m2,x -> [m2,x]}),
 			meta_map.combine(ss.lr_ch,by:0).map({m1,m2,x -> [m2,x]})
 		)
-		
+		*/
+		ASSEMBLY_QC = [out: [assembly_qc: Channel.empty(),long_bam: Channel.empty(),long_bai: Channel.empty(),long_bam_stats: Channel.empty(),short_bam: Channel.empty(),short_bai: Channel.empty(),short_bam_stats: Channel.empty(),assembly_multiqc: Channel.empty()]]
 		//ANNOTATE_ASSEMBLY(params.annot,Channel.empty(),ss.lr_ch,ss.sr_ch)	
 		
 
@@ -91,7 +94,7 @@ workflow {
 		asm_qc_short_bai = ASSEMBLY_QC.out.short_bai
 		asm_qc_short_bam_stats = ASSEMBLY_QC.out.short_bam_stats
 		
-		seq_multiqc = SEQUENCING_QC.out.multiqc_html
+		seq_multiqc = Channel.empty() //SEQUENCING_QC.out.multiqc_html
 		asm_multiqc = ASSEMBLY_QC.out.assembly_multiqc
 }
 

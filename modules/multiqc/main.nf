@@ -6,7 +6,7 @@ process MULTIQC {
     time '1 h'
     input:
 	    tuple val(meta),path('db')
-	    each path('config.yml')
+	    path('config.yml')
     output:
 	    tuple val(meta),path('multiqc.html'), emit: html
     script:
