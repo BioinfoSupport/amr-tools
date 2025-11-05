@@ -4,7 +4,6 @@ include { NANOPLOT       } from './modules/nanoplot'
 include { FASTP          } from './modules/fastp'
 include { ORGANIZE_FILES } from './modules/organize_files'
 include { MULTIQC        } from './modules/multiqc'
-include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 
 
@@ -45,6 +44,7 @@ workflow SEQ_QC {
 // ------------------------------------------------------------------
 // Main entry point when running the pipeline from command line
 // ------------------------------------------------------------------
+include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 params.samplesheet = null
 params.long_reads = null

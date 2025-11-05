@@ -2,10 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
 	"oneOf": [
-		{
-			"required": ["samplesheet"],
-			"not": {"required":["fasta"]}
-		}
+		{"required": ["samplesheet"],"not": {"required":["fasta"]}},
+		{"required": ["fasta"],"not": {"required":["samplesheet"]}}
 	],
   
   "properties": {

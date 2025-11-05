@@ -20,7 +20,6 @@ include { MULTIREPORT                              } from './subworkflows/multir
 
 
 
-
 defaultOrgArgs = new groovy.json.JsonSlurper().parseText(file("${moduleDir}/assets/default_org_args.json").text)
 
 // Get name of the organism to use for given sample
@@ -44,7 +43,7 @@ def tool_args(tool_name,meta,opts,org_name=null) {
 
 
 
-workflow ASM_ANNOT_FOR_ORG {
+workflow AMR_ANNOT_ASSEMBLY_FOR_ORG {
 	take:
 		opts
 		fa_ch                // channel: [ val(meta), path(assembly_fna) ]
@@ -83,36 +82,11 @@ workflow ASM_ANNOT_FOR_ORG {
 
 
 
-workflow ASM_ANNOT {
+workflow AMR_ANNOT_ASSEMBLY {
 	take:
 		opts
 		asm_ch
-		lr_ch
-		sr_ch
 	main:
-		// ------------------------------------------------------------------			
-		// Convert input files formats
-		// ------------------------------------------------------------------
-		// Uncompress .fasta.gz files when needed
-		asm_ch = asm_ch.branch({meta,f -> 
-			gz: f.name =~ /\.gz$/
-			fa: true
-		})
-		asm_ch = asm_ch.fa.mix(GZIP_DECOMPRESS_FASTA(asm_ch.gz))
-
-		// -------------------
-		// Reads processing
-		// -------------------
-		PLASMIDFINDER_LONGREAD(lr_ch.filter({!opts.skip_plasmidfinder_longread}))
-		RESFINDER_LONGREAD(lr_ch.filter({!opts.skip_resfinder_longread}),'nanopore')
-		PLASMIDFINDER_SHORTREAD(sr_ch.filter({!opts.skip_plasmidfinder_shortread}))
-		RESFINDER_SHORTREAD(lr_ch.filter({!opts.skip_resfinder_shortread}),'illumina')
-			
-		// ---------------------------------------------------------------------
-		// Tools that can run directly on a FASTA without specifying an organism
-		// ---------------------------------------------------------------------
-		fai_ch = SAMTOOLS_FAIDX(asm_ch)
-
 		// CGE - RESFINDER
 		resfinder_ch = RESFINDER(asm_ch.filter({!opts.skip_resfinder}),'fasta')
 
@@ -149,30 +123,11 @@ workflow ASM_ANNOT {
 		// ---------------------------------------------------------------------
 		// Organism specific tools
 		// ---------------------------------------------------------------------
-		ann_ch = ASM_ANNOT_FOR_ORG(opts,asm_ch,orgfinder_ch.org_name)
+		ann_ch = AMR_ANNOT_ASSEMBLY_FOR_ORG(opts,asm_ch,orgfinder_ch.org_name)
 
-
-		// Results aggregation and reporting
-		MULTIREPORT(
-			asm_ch,
-			fai_ch,
-			ann_ch.org_name,
-			orgfinder_ch.orgfinder,
-			amrfinderplus_ch,
-			resfinder_ch,
-			mobtyper_ch,
-			plasmidfinder_ch,
-			ann_ch.cgemlst,
-			ann_ch.MLST,
-			ann_ch.prokka,
-			RESFINDER_LONGREAD.out,
-			PLASMIDFINDER_LONGREAD.out,
-			RESFINDER_SHORTREAD.out,
-			PLASMIDFINDER_SHORTREAD.out
-		)
-		
 	emit:
 			orgfinder           = orgfinder_ch.orgfinder
+			orgname             = AMR_ANNOT_ASSEMBLY_FOR_ORG.out.org_name
 			amrfinderplus       = amrfinderplus_ch
 			resfinder           = resfinder_ch
 			mobtyper            = mobtyper_ch
@@ -180,10 +135,71 @@ workflow ASM_ANNOT {
 			cgemlst             = ann_ch.cgemlst
 			MLST                = ann_ch.MLST
 			prokka              = ann_ch.prokka
+}
+
+
+
+workflow AMR_ANNOT_READS {
+	take:
+		opts
+		lr_ch
+		sr_ch
+	main:
+		PLASMIDFINDER_LONGREAD(lr_ch.filter({!opts.skip_plasmidfinder_longread}))
+		RESFINDER_LONGREAD(lr_ch.filter({!opts.skip_resfinder_longread}),'nanopore')
+		PLASMIDFINDER_SHORTREAD(sr_ch.filter({!opts.skip_plasmidfinder_shortread}))
+		RESFINDER_SHORTREAD(lr_ch.filter({!opts.skip_resfinder_shortread}),'illumina')
+	emit:
 			resfinder_long      = RESFINDER_LONGREAD.out
 			resfinder_short     = RESFINDER_SHORTREAD.out
 			plasmidfinder_long  = PLASMIDFINDER_LONGREAD.out
 			plasmidfinder_short = PLASMIDFINDER_SHORTREAD.out
+}
+
+
+
+
+workflow AMR_ANNOT {
+	take:
+		opts
+		asm_ch
+		lr_ch
+		sr_ch
+	main:
+		fai_ch = SAMTOOLS_FAIDX(asm_ch)
+		AMR_ANNOT_ASSEMBLY(opts,asm_ch)
+		AMR_ANNOT_READS(opts,lr_ch,sr_ch)
+		MULTIREPORT(
+			asm_ch,
+			fai_ch,
+			AMR_ANNOT_ASSEMBLY.out.orgname,
+			AMR_ANNOT_ASSEMBLY.out.orgfinder,
+			AMR_ANNOT_ASSEMBLY.out.amrfinderplus,
+			AMR_ANNOT_ASSEMBLY.out.resfinder,
+			AMR_ANNOT_ASSEMBLY.out.mobtyper,
+			AMR_ANNOT_ASSEMBLY.out.plasmidfinder,
+			AMR_ANNOT_ASSEMBLY.out.cgemlst,
+			AMR_ANNOT_ASSEMBLY.out.MLST,
+			AMR_ANNOT_ASSEMBLY.out.prokka,
+			AMR_ANNOT_READS.out.resfinder_long,
+			AMR_ANNOT_READS.out.plasmidfinder_long,
+			AMR_ANNOT_READS.out.resfinder_short,
+			AMR_ANNOT_READS.out.plasmidfinder_short
+		)
+		
+	emit:
+			orgfinder           = AMR_ANNOT_ASSEMBLY.out.orgfinder
+			amrfinderplus       = AMR_ANNOT_ASSEMBLY.out.amrfinderplus
+			resfinder           = AMR_ANNOT_ASSEMBLY.out.resfinder
+			mobtyper            = AMR_ANNOT_ASSEMBLY.out.mobtyper
+			plasmidfinder       = AMR_ANNOT_ASSEMBLY.out.plasmidfinder
+			cgemlst             = AMR_ANNOT_ASSEMBLY.out.cgemlst
+			MLST                = AMR_ANNOT_ASSEMBLY.out.MLST
+			prokka              = AMR_ANNOT_ASSEMBLY.out.prokka
+			resfinder_long      = AMR_ANNOT_READS.out.resfinder_long
+			resfinder_short     = AMR_ANNOT_READS.out.resfinder_short
+			plasmidfinder_long  = AMR_ANNOT_READS.out.plasmidfinder_long
+			plasmidfinder_short = AMR_ANNOT_READS.out.plasmidfinder_short
 			
 	    multireport_folder = MULTIREPORT.out.folder
     	html_report        = MULTIREPORT.out.html
@@ -195,15 +211,35 @@ workflow ASM_ANNOT {
 
 
 
-
-
-
 // ------------------------------------------------------------------
 // Main entry point when running the pipeline from command line
 // ------------------------------------------------------------------
+include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 params.samplesheet = null
 params.fasta       = null
+params.org_name                     = null
+
+params.skip_prokka                  = true
+params.skip_cgemlst                 = false
+params.skip_MLST                    = false
+params.skip_resfinder               = false
+params.skip_amrfinderplus           = false
+params.skip_plasmidfinder           = false
+params.skip_mobtyper                = false
+params.skip_orgfinder               = false
+params.skip_speciator               = true
+params.skip_plasmidfinder_longread  = false
+params.skip_resfinder_longread      = false
+params.skip_plasmidfinder_shortread = false
+params.skip_resfinder_shortread     = false
+
+params.default_mobtyper_args        = ''
+params.default_amrfinderplus_args   = ''
+params.default_plasmidfinder_args   = ''
+params.default_cgemlst_args         = null // do not run by default
+params.default_MLST_args            = ''   // autodetect species by default
+params.default_prokka_args          = '--kingdom Bacteria'
 
 workflow {
 	main:
@@ -213,9 +249,19 @@ workflow {
 
 		// Extract Long_read and Short_read channels from params 
 		fa_ch = Channel.empty()
+		lr_ch = Channel.empty()
+		sr_ch = Channel.empty()
 		if (params.samplesheet) {
-			fa_ch = Channel.fromList(samplesheetToList(params.samplesheet,'assets/schema_samplesheet.json'))
-				.map({x -> [[sample_id:x[0].sample_id,assembly_name:x[0].assembly_name],x[0].assembly_fasta]})
+				SS = Channel.fromList(samplesheetToList(params.samplesheet, "assets/schema_samplesheet.json"))
+					.multiMap({x ->
+						meta = [sample_id:x[0].sample_id,assembly_name:x[0].assembly_name]
+						fa_ch: [meta,x[0].assembly_fasta]
+						lr_ch: [meta,x[0].long_reads]
+						sr_ch: [meta,[x[0].short_reads_1,x[0].short_reads_2]]
+					})
+				fa_ch = SS.fa_ch
+				lr_ch = SS.lr_ch
+				sr_ch = SS.sr_ch
 		} else {
 			fa_ch = Channel.fromPath(params.fasta)
 				.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,''),assembly_name:'fasta'],x]})
@@ -224,29 +270,65 @@ workflow {
 		// Filter out missing values
 		fa_ch = fa_ch.filter({x,y -> y})
 		
+		// ------------------------------------------------------------------			
+		// Convert input files formats
+		// ------------------------------------------------------------------
+		// Uncompress .fasta.gz files when needed
+		fa_ch = fa_ch.branch({meta,f -> 
+			gz: f.name =~ /\.gz$/
+			fa: true
+		})
+		fa_ch = fa_ch.fa.mix(GZIP_DECOMPRESS_FASTA(fa_ch.gz))
 		
-		ASM_ANNOT(fa_ch)
+		AMR_ANNOT(params,fa_ch,lr_ch,sr_ch)
 
 	publish:
-		long_nanoplot     = SEQ_QC.out.long_nanoplot
-		short_fastp_json  = SEQ_QC.out.short_fastp_json
-		short_fastp_html  = SEQ_QC.out.short_fastp_html
-		multiqc_html      = SEQ_QC.out.multiqc_html
+		orgfinder           = AMR_ANNOT.out.orgfinder
+		amrfinderplus       = AMR_ANNOT.out.amrfinderplus
+		resfinder           = AMR_ANNOT.out.resfinder
+		mobtyper            = AMR_ANNOT.out.mobtyper
+		plasmidfinder       = AMR_ANNOT.out.plasmidfinder
+		cgemlst             = AMR_ANNOT.out.cgemlst
+		MLST                = AMR_ANNOT.out.MLST
+		prokka              = AMR_ANNOT.out.prokka
+/*
+		resfinder_long      = AMR_ANNOT.out.resfinder_long
+		resfinder_short     = AMR_ANNOT.out.resfinder_short
+		plasmidfinder_long  = AMR_ANNOT.out.plasmidfinder_long
+		plasmidfinder_short = AMR_ANNOT.out.plasmidfinder_short
+		
+    multireport_folder = AMR_ANNOT.out.multireport_folder
+  	html_report        = AMR_ANNOT.out.html_report
+  	xlsx_report        = AMR_ANNOT.out.xlsx_report
+*/
 }
 
 output {
-	long_nanoplot {
-		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/long_nanoplot"}
+	orgfinder {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/orgfinder"}
 	}
-	short_fastp_json {
-		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/short_fastp.json"}
-	}	
-	short_fastp_html {
-		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/short_fastp.html"}
+	amrfinderplus {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/amrfinderplus"}
 	}
-	multiqc_html {
-		path { it >> "./seq_qc.html" }
+	resfinder {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/resfinder"}
 	}
+	mobtyper {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/mobtyper"}
+	}
+	plasmidfinder {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/plasmidfinder"}
+	}
+	cgemlst {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/cgemlst"}
+	}
+	MLST {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/MLST"}
+	}
+	prokka {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/prokka"}
+	}
+	
 }
 
 
