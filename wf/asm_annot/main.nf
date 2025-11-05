@@ -21,7 +21,6 @@ include { MULTIREPORT                              } from './subworkflows/multir
 
 
 
-
 defaultOrgArgs = new groovy.json.JsonSlurper().parseText(file("${moduleDir}/assets/default_org_args.json").text)
 
 // Get name of the organism to use for given sample
@@ -45,7 +44,7 @@ def tool_args(tool_name,meta,opts,org_name=null) {
 
 
 
-workflow ANNOTATE_ASSEMBLY_FOR_ORG {
+workflow ASM_ANNOT_FOR_ORG {
 	take:
 		opts
 		fa_ch                // channel: [ val(meta), path(assembly_fna) ]
@@ -84,7 +83,7 @@ workflow ANNOTATE_ASSEMBLY_FOR_ORG {
 
 
 
-workflow ANNOTATE_ASSEMBLY {
+workflow ASM_ANNOT {
 	take:
 		opts
 		asm_ch
@@ -150,7 +149,7 @@ workflow ANNOTATE_ASSEMBLY {
 		// ---------------------------------------------------------------------
 		// Organism specific tools
 		// ---------------------------------------------------------------------
-		ann_ch = ANNOTATE_ASSEMBLY_FOR_ORG(opts,asm_ch,orgfinder_ch.org_name)
+		ann_ch = ASM_ANNOT_FOR_ORG(opts,asm_ch,orgfinder_ch.org_name)
 
 
 		// Results aggregation and reporting
@@ -190,3 +189,75 @@ workflow ANNOTATE_ASSEMBLY {
     	html_report        = MULTIREPORT.out.html
     	xlsx_report        = MULTIREPORT.out.xlsx
 }
+
+
+
+
+
+
+
+
+
+// ------------------------------------------------------------------
+// Main entry point when running the pipeline from command line
+// ------------------------------------------------------------------
+
+params.samplesheet = null
+params.fasta       = null
+
+workflow {
+	main:
+		// Validate parameters and print summary of supplied ones
+		validateParameters()
+		log.info(paramsSummaryLog(workflow))
+
+		// Extract Long_read and Short_read channels from params 
+		fa_ch = Channel.empty()
+		if (params.samplesheet) {
+			fa_ch = Channel.fromList(samplesheetToList(params.samplesheet,'assets/schema_samplesheet.json'))
+				.map({x -> [[sample_id:x[0].sample_id,assembly_name:x[0].assembly_name],x[0].assembly_fasta]})
+		} else {
+			fa_ch = Channel.fromPath(params.fasta)
+				.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,''),assembly_name:'fasta'],x]})
+		}
+		
+		// Filter out missing values
+		fa_ch = fa_ch.filter({x,y -> y})
+		
+		
+		ASM_ANNOT(fa_ch)
+
+	publish:
+		long_nanoplot     = SEQ_QC.out.long_nanoplot
+		short_fastp_json  = SEQ_QC.out.short_fastp_json
+		short_fastp_html  = SEQ_QC.out.short_fastp_html
+		multiqc_html      = SEQ_QC.out.multiqc_html
+}
+
+output {
+	long_nanoplot {
+		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/long_nanoplot"}
+	}
+	short_fastp_json {
+		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/short_fastp.json"}
+	}	
+	short_fastp_html {
+		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/short_fastp.html"}
+	}
+	multiqc_html {
+		path { it >> "./seq_qc.html" }
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

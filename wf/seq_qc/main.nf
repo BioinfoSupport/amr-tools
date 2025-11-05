@@ -1,7 +1,6 @@
 
 include { SAMTOOLS_FASTQ    } from './modules/samtools/fastq'
 include { NANOPLOT       } from './modules/nanoplot'
-//include { FASTQC         } from './modules/fastqc'
 include { FASTP          } from './modules/fastp'
 include { ORGANIZE_FILES } from './modules/organize_files'
 include { MULTIQC        } from './modules/multiqc'
@@ -20,11 +19,6 @@ workflow SEQ_QC {
 		// Run fastp once on each FASTQ-pair, and then expand to inputs sharing the same FASTQ
 		FASTP(fqs_ch)
 
-		// Run FASTQC
-		// WARNING: similarly to above, it should run once on each FASTQ and then expand to all inputs
-		//          but it is not possible as we need to give sample_id to have correct sample names for MULTIQC
-		//FASTQC(fqs_ch.map({meta,x -> [meta,x,meta.sample_id]}))
-
 		// MultiQC
 		ORGANIZE_FILES(
 			Channel.empty().mix(
@@ -39,8 +33,6 @@ workflow SEQ_QC {
 	emit:
 		long_nanoplot     = NANOPLOT.out.nanoplot
 		long_nanostat     = NANOPLOT.out.nanostat
-		//short_fastqc_html = FASTQC.out.html
-		//short_fastqc_zip  = FASTQC.out.zip
 		short_fastp_json  = FASTP.out.json
 		short_fastp_html  = FASTP.out.html
 		multiqc_html      = MULTIQC.out.html.map({m,x -> x})
@@ -50,11 +42,9 @@ workflow SEQ_QC {
 
 
 
-
-
-
-
-
+// ------------------------------------------------------------------
+// Main entry point when running the pipeline from command line
+// ------------------------------------------------------------------
 
 params.samplesheet = null
 params.long_reads = null

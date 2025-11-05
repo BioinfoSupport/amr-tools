@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+	"oneOf": [
+		{
+			"required": ["samplesheet"],
+			"not": {"required":["fasta"]}
+		}
+	],
+  
+  "properties": {
+  	
+		"samplesheet": { 
+			"type": "string",
+			"format": "file-path",
+			"exists": true,
+			"pattern": "^\\S+\\.(csv)$",
+			"description": "Path to a CSV file containing the sample sheet."
+		},
+		
+		"fasta": {
+			"type": "string",
+			"format": "file-path-pattern",
+			"exists": true,
+			"pattern": "^\\S+\\.(fasta|fa|fna)$",
+			"description": "Path to FASTA files containing genomes assemblies to annotate"
+		}
+		
+  }
+}
+
+
