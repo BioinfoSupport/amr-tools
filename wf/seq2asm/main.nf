@@ -66,7 +66,7 @@ params.long_reads  = []
 params.short_reads = []
 params.long_unicycler           = false
 params.long_hybracter           = false
-params.long_flye_medaka         = true,
+params.long_flye_medaka         = false
 params.short_spades             = false
 params.short_unicycler          = false
 params.hybrid_unicycler         = false
@@ -95,8 +95,19 @@ workflow {
 				fql_ch = SS.fql_ch
 				fqs_ch = SS.fqs_ch
 		} else {
-			fa_ch = Channel.fromPath(params.fasta)
-				.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,''),assembly_name:'fasta'],x]})
+			if (params.fasta) {
+				fa_ch = Channel.fromPath(params.fasta)
+						.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,''),assembly_name:'fasta'],x]})
+			}
+			if (params.long_reads) {
+				fql_ch = Channel.fromPath(params.long_reads)
+						.map({x -> [["sample_id":x.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'')],x]})
+			}
+			if (params.short_reads) {
+				fqs_ch = Channel
+						.fromFilePairs(params.short_reads,size:-1) { file -> file.name.replaceAll(/_(R?[12])(_001)?\.(fq|fastq)\.gz$/, '') }
+						.map({id,x -> [["sample_id":id],x]})
+			}
 		}
 		
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
