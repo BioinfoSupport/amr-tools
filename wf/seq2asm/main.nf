@@ -32,24 +32,24 @@ workflow SEQ2ASM {
 		
 	emit:
 		fasta = Channel.empty().mix(
-			SHORT_SPADES.out.fasta.map({meta,x -> [meta,[assembly_name:'short_spades'],x]}),
-			SHORT_UNICYCLER.out.fasta.map({meta,x -> [meta,[assembly_name:'short_unicycler'],x]}),
-			LONG_FLYE_MEDAKA.out.fasta.map({meta,x -> [meta,[assembly_name:'long_flye_medaka'],x]}),
-			LONG_UNICYCLER.out.fasta.map({meta,x -> [meta,[assembly_name:'long_unicycler'],x]}),
-			LONG_HYBRACTER.out.fasta.map({meta,x -> [meta,[assembly_name:'long_hybracter'],x]}),
-		  HYBRID_UNICYCLER.out.fasta.map({meta,x -> [meta,[assembly_name:'hybrid_unicycler'],x]}),
-		  HYBRID_HYBRACTER.out.fasta.map({meta,x -> [meta,[assembly_name:'hybrid_hybracter'],x]}),
-		  HYBRID_FLYE_MEDAKA_PILON.out.fasta.map({meta,x -> [meta,[assembly_name:'hybrid_flye_medaka_pilon'],x]})
+			SHORT_SPADES.out.fasta.map({meta,x -> [meta+[assembly_name:'short_spades'],x]}),
+			SHORT_UNICYCLER.out.fasta.map({meta,x -> [meta+[assembly_name:'short_unicycler'],x]}),
+			LONG_FLYE_MEDAKA.out.fasta.map({meta,x -> [meta+[assembly_name:'long_flye_medaka'],x]}),
+			LONG_UNICYCLER.out.fasta.map({meta,x -> [meta+[assembly_name:'long_unicycler'],x]}),
+			LONG_HYBRACTER.out.fasta.map({meta,x -> [meta+[assembly_name:'long_hybracter'],x]}),
+		  HYBRID_UNICYCLER.out.fasta.map({meta,x -> [meta+[assembly_name:'hybrid_unicycler'],x]}),
+		  HYBRID_HYBRACTER.out.fasta.map({meta,x -> [meta+[assembly_name:'hybrid_hybracter'],x]}),
+		  HYBRID_FLYE_MEDAKA_PILON.out.fasta.map({meta,x -> [meta+[assembly_name:'hybrid_flye_medaka_pilon'],x]})
 		)
 		dir = Channel.empty().mix(
-			SHORT_SPADES.out.dir.map({meta,x -> [meta,[assembly_name:'short_spades'],x]}),
-			SHORT_UNICYCLER.out.dir.map({meta,x -> [meta,[assembly_name:'short_unicycler'],x]}),
-			LONG_FLYE_MEDAKA.out.dir.map({meta,x -> [meta,[assembly_name:'long_flye_medaka'],x]}),
-			LONG_UNICYCLER.out.dir.map({meta,x -> [meta,[assembly_name:'long_unicycler'],x]}),
-			LONG_HYBRACTER.out.dir.map({meta,x -> [meta,[assembly_name:'long_hybracter'],x]}),
-		  HYBRID_UNICYCLER.out.dir.map({meta,x -> [meta,[assembly_name:'hybrid_unicycler'],x]}),
-		  HYBRID_HYBRACTER.out.dir.map({meta,x -> [meta,[assembly_name:'hybrid_hybracter'],x]}),
-		  HYBRID_FLYE_MEDAKA_PILON.out.dir.map({meta,x -> [meta,[assembly_name:'hybrid_flye_medaka_pilon'],x]})
+			SHORT_SPADES.out.dir.map({meta,x -> [meta+[assembly_name:'short_spades'],x]}),
+			SHORT_UNICYCLER.out.dir.map({meta,x -> [meta+[assembly_name:'short_unicycler'],x]}),
+			LONG_FLYE_MEDAKA.out.dir.map({meta,x -> [meta+[assembly_name:'long_flye_medaka'],x]}),
+			LONG_UNICYCLER.out.dir.map({meta,x -> [meta+[assembly_name:'long_unicycler'],x]}),
+			LONG_HYBRACTER.out.dir.map({meta,x -> [meta+[assembly_name:'long_hybracter'],x]}),
+		  HYBRID_UNICYCLER.out.dir.map({meta,x -> [meta+[assembly_name:'hybrid_unicycler'],x]}),
+		  HYBRID_HYBRACTER.out.dir.map({meta,x -> [meta+[assembly_name:'hybrid_hybracter'],x]}),
+		  HYBRID_FLYE_MEDAKA_PILON.out.dir.map({meta,x -> [meta+[assembly_name:'hybrid_flye_medaka_pilon'],x]})
 		)
 }
 
@@ -86,7 +86,7 @@ workflow {
 		if (params.samplesheet) {
 				SS = Channel.fromList(samplesheetToList(params.samplesheet, "assets/schema_samplesheet.json"))
 					.multiMap({x ->
-						meta = [sample_id:x[0].sample_id,assembly_name:x[0].assembly_name]
+						meta = [sample_id:x[0].sample_id]
 						fa_ch: [meta,x[0].assembly_fasta]
 						fql_ch: [meta,x[0].long_reads]
 						fqs_ch: [meta,[x[0].short_reads_1,x[0].short_reads_2]]
@@ -97,7 +97,7 @@ workflow {
 		} else {
 			if (params.fasta) {
 				fa_ch = Channel.fromPath(params.fasta)
-						.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,''),assembly_name:'fasta'],x]})
+						.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,'')],x]})
 			}
 			if (params.long_reads) {
 				fql_ch = Channel.fromPath(params.long_reads)
