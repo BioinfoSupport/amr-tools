@@ -64,13 +64,13 @@ include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin
 params.samplesheet = null
 params.long_reads  = []
 params.short_reads = []
-params.long_unicycler           = false,
-params.long_hybracter           = false,
+params.long_unicycler           = false
+params.long_hybracter           = false
 params.long_flye_medaka         = true,
-params.short_spades             = false,
-params.short_unicycler          = false,
-params.hybrid_unicycler         = false,
-params.hybrid_hybracter         = false,
+params.short_spades             = false
+params.short_unicycler          = false
+params.hybrid_unicycler         = false
+params.hybrid_hybracter         = false
 params.hybrid_flye_medaka_pilon = false
 
 workflow {
