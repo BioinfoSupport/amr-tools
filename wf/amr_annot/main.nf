@@ -142,13 +142,13 @@ workflow AMR_ANNOT_ASSEMBLY {
 workflow AMR_ANNOT_READS {
 	take:
 		opts
-		lr_ch
-		sr_ch
+		fqs_ch
+		fql_ch
 	main:
-		PLASMIDFINDER_LONGREAD(lr_ch.filter({!opts.skip_plasmidfinder_longread}))
-		RESFINDER_LONGREAD(lr_ch.filter({!opts.skip_resfinder_longread}),'nanopore')
-		PLASMIDFINDER_SHORTREAD(sr_ch.filter({!opts.skip_plasmidfinder_shortread}))
-		RESFINDER_SHORTREAD(lr_ch.filter({!opts.skip_resfinder_shortread}),'illumina')
+		PLASMIDFINDER_LONGREAD(fql_ch.filter({!opts.skip_plasmidfinder_longread}))
+		RESFINDER_LONGREAD(fql_ch.filter({!opts.skip_resfinder_longread}),'nanopore')
+		PLASMIDFINDER_SHORTREAD(fqs_ch.filter({!opts.skip_plasmidfinder_shortread}))
+		RESFINDER_SHORTREAD(fql_ch.filter({!opts.skip_resfinder_shortread}),'illumina')
 	emit:
 			resfinder_long      = RESFINDER_LONGREAD.out
 			resfinder_short     = RESFINDER_SHORTREAD.out
@@ -163,12 +163,12 @@ workflow AMR_ANNOT {
 	take:
 		opts
 		asm_ch
-		lr_ch
-		sr_ch
+		fqs_ch
+		fql_ch
 	main:
 		fai_ch = SAMTOOLS_FAIDX(asm_ch)
 		AMR_ANNOT_ASSEMBLY(opts,asm_ch)
-		AMR_ANNOT_READS(opts,lr_ch,sr_ch)
+		AMR_ANNOT_READS(opts,fqs_ch,fql_ch)
 		MULTIREPORT(
 			asm_ch,
 			fai_ch,
@@ -202,8 +202,8 @@ workflow AMR_ANNOT {
 			plasmidfinder_short = AMR_ANNOT_READS.out.plasmidfinder_short
 			
 	    multireport_folder = MULTIREPORT.out.folder
-    	html_report        = MULTIREPORT.out.html
-    	xlsx_report        = MULTIREPORT.out.xlsx
+    	multireport_html   = MULTIREPORT.out.html.map({m,x -> x})
+    	multireport_xlsx   = MULTIREPORT.out.xlsx.map({m,x -> x})
 }
 
 
@@ -249,19 +249,19 @@ workflow {
 
 		// Extract Long_read and Short_read channels from params 
 		fa_ch = Channel.empty()
-		lr_ch = Channel.empty()
-		sr_ch = Channel.empty()
+		fqs_ch = Channel.empty()
+		fql_ch = Channel.empty()
 		if (params.samplesheet) {
 				SS = Channel.fromList(samplesheetToList(params.samplesheet, "assets/schema_samplesheet.json"))
 					.multiMap({x ->
 						meta = [sample_id:x[0].sample_id,assembly_name:x[0].assembly_name]
 						fa_ch: [meta,x[0].assembly_fasta]
-						lr_ch: [meta,x[0].long_reads]
-						sr_ch: [meta,[x[0].short_reads_1,x[0].short_reads_2]]
+						fqs_ch: [meta,[x[0].short_reads_1,x[0].short_reads_2]]
+						fql_ch: [meta,x[0].long_reads]
 					})
 				fa_ch = SS.fa_ch
-				lr_ch = SS.lr_ch
-				sr_ch = SS.sr_ch
+				fqs_ch = SS.fqs_ch
+				fql_ch = SS.fql_ch
 		} else {
 			fa_ch = Channel.fromPath(params.fasta)
 				.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,''),assembly_name:'fasta'],x]})
@@ -280,7 +280,7 @@ workflow {
 		})
 		fa_ch = fa_ch.fa.mix(GZIP_DECOMPRESS_FASTA(fa_ch.gz))
 		
-		AMR_ANNOT(params,fa_ch,lr_ch,sr_ch)
+		AMR_ANNOT(params,fa_ch,fqs_ch,fql_ch)
 
 	publish:
 		orgfinder           = AMR_ANNOT.out.orgfinder
@@ -291,16 +291,13 @@ workflow {
 		cgemlst             = AMR_ANNOT.out.cgemlst
 		MLST                = AMR_ANNOT.out.MLST
 		prokka              = AMR_ANNOT.out.prokka
-/*
 		resfinder_long      = AMR_ANNOT.out.resfinder_long
 		resfinder_short     = AMR_ANNOT.out.resfinder_short
 		plasmidfinder_long  = AMR_ANNOT.out.plasmidfinder_long
 		plasmidfinder_short = AMR_ANNOT.out.plasmidfinder_short
 		
-    multireport_folder = AMR_ANNOT.out.multireport_folder
-  	html_report        = AMR_ANNOT.out.html_report
-  	xlsx_report        = AMR_ANNOT.out.xlsx_report
-*/
+  	multireport_html    = AMR_ANNOT.out.html_report
+  	multireport_xlsx    = AMR_ANNOT.out.xlsx_report
 }
 
 output {
@@ -329,6 +326,25 @@ output {
 		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/prokka"}
 	}
 	
+	resfinder_long {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/resfinder_long"}
+	}
+	resfinder_short {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/resfinder_short"}
+	}
+	plasmidfinder_long {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/plasmidfinder_long"}
+	}
+	plasmidfinder_short {
+		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/plasmidfinder_short"}
+	}
+	
+	multireport_html {
+		path { it >> "./amr_annot.html" }
+	}
+	multireport_xlsx {
+		path { it >> "./amr_annot.xlsx" }
+	}
 }
 
 
