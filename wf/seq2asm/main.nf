@@ -1,5 +1,5 @@
 
-
+include { SAMTOOLS_FASTQ                                 } from './modules/samtools/fastq'
 include { UNICYCLER as LONG_UNICYCLER                    } from './subworkflows/unicycler'
 include { UNICYCLER as SHORT_UNICYCLER                   } from './subworkflows/unicycler'
 include { UNICYCLER as HYBRID_UNICYCLER                  } from './subworkflows/unicycler'
@@ -98,6 +98,13 @@ workflow {
 			fa_ch = Channel.fromPath(params.fasta)
 				.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,''),assembly_name:'fasta'],x]})
 		}
+		
+		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
+		fqs_ch = fqs_ch.branch({meta,f -> 
+			bam: f.name =~ /\.(bam|cram)$/
+			fq: true
+		})
+		fqs_ch = fqs_ch.fq.mix(SAMTOOLS_FASTQ(fqs_ch.bam))
 
 		SEQ2ASM(params,fqs_ch,fql_ch)
 
