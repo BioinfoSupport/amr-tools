@@ -86,9 +86,54 @@ workflow ASSEMBLY_QC {
 		short_bam_stats = SAMTOOLS_STATS_SHORT.out
 		short_vcf       = Channel.empty()
 		
-		assembly_qc      = COMBINE_QC_STATS.out.rds
-		assembly_multiqc = ASSEMBLY_MULTIQC.out
+		assembly_qc          = COMBINE_QC_STATS.out.rds
+		assembly_multiqc_txt = ASSEMBLY_MULTIQC.out
 }
+
+
+
+// ------------------------------------------------------------------
+// Main entry point when running the pipeline from command line
+// ------------------------------------------------------------------
+include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
+
+params.samplesheet = null
+params.fasta       = null
+params.long_reads  = null
+params.short_reads = null
+
+import AmrUtils
+
+workflow {
+	main:
+		// Validate parameters and print summary of supplied ones
+		validateParameters()
+		log.info(paramsSummaryLog(workflow))
+
+		def ss = AmrUtils.parse_generic_params(params,samplesheetToList)
+
+		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
+		ss.fql_ch = ss.fql_ch.branch({meta,f -> 
+			bam: f.name =~ /\.(bam|cram)$/
+			fq: true
+		})
+		ss.fql_ch = ss.fql_ch.fq.mix(SAMTOOLS_FASTQ(ss.fql_ch.bam))
+
+		// Reads Quality Controls, get a multiQC
+		ASSEMBLY_QC(ss.fa_ch,ss.fqs_ch,ss.fql_ch)
+		
+	publish:
+		assembly_multiqc_txt  = ASSEMBLY_QC.out.assembly_multiqc_txt
+}
+
+output {
+	assembly_multiqc_txt {
+		path { it >> "./assembly_multiqc.txt" }
+	}
+}
+
+
+
 
 
 
