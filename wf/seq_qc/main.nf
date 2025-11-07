@@ -9,8 +9,8 @@ include { MULTIQC        } from './modules/multiqc'
 
 workflow SEQ_QC {
 	take:
+		fqs_ch    // channel: [ val(meta), path(short_reads) ]	
 		fql_ch    // channel: [ val(meta), path(long_reads) ]
-		fqs_ch    // channel: [ val(meta), path(short_reads) ]
 	main:
 		// Run nanoplot once on each FASTQ, and then expand to inputs sharing the same FASTQ
 		NANOPLOT(fql_ch)
@@ -71,7 +71,7 @@ workflow {
 		//lr_ch = FQ_SUBSAMPLE(ss.lr_ch)
 
 		// Reads Quality Controls, get a multiQC
-		SEQ_QC(ss.fql_ch,ss.fqs_ch)
+		SEQ_QC(ss.fqs_ch,ss.fql_ch)
 		
 	publish:
 		long_nanoplot     = SEQ_QC.out.long_nanoplot
