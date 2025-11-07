@@ -50,50 +50,28 @@ params.samplesheet = null
 params.long_reads = null
 params.short_reads = null
 
+import AmrUtils
+
 workflow {
 	main:
 		// Validate parameters and print summary of supplied ones
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-		// Extract Long_read and Short_read channels from params 
-		lr_ch = Channel.empty()
-		sr_ch = Channel.empty()
-		if (params.samplesheet) {
-			SS = Channel.fromList(samplesheetToList(params.samplesheet, "assets/schema_samplesheet.json"))
-				.multiMap({x ->
-					lr_ch: [[sample_id:x[0].sample_id],x[0].long_reads]
-					sr_ch: [[sample_id:x[0].sample_id],[x[0].short_reads_1,x[0].short_reads_2]]
-				})
-			lr_ch = SS.lr_ch
-			sr_ch = SS.sr_ch
-		} else {
-			if (params.long_reads) {
-				lr_ch = Channel.fromPath(params.long_reads)
-						.map({x -> tuple(["sample_id":x.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'')],x)})
-			}
-			if (params.short_reads) {
-				sr_ch = Channel
-						.fromFilePairs(params.short_reads,size:-1) { file -> file.name.replaceAll(/_(R?[12])(_001)?\.(fq|fastq)\.gz$/, '') }
-						.map({id,x -> [["sample_id":id],x]})
-			}
-		}
-		// Filter out missing values
-		sr_ch = sr_ch.map({x,y -> [x,y.findAll({v->v})]}).filter({x,y -> y})
-		lr_ch = lr_ch.filter({x,y -> y})
+		def ss = AmrUtils.parse_generic_params(params,samplesheetToList)
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
-		lr_ch = lr_ch.branch({meta,f -> 
+		ss.fql_ch = ss.fql_ch.branch({meta,f -> 
 			bam: f.name =~ /\.(bam|cram)$/
 			fq: true
 		})
-		lr_ch = lr_ch.fq.mix(SAMTOOLS_FASTQ(lr_ch.bam))
+		ss.fql_ch = ss.fql_ch.fq.mix(SAMTOOLS_FASTQ(ss.fql_ch.bam))
 
 		// Reduce FASTQ size if needed
 		//lr_ch = FQ_SUBSAMPLE(ss.lr_ch)
 
 		// Reads Quality Controls, get a multiQC
-		SEQ_QC(lr_ch,sr_ch)
+		SEQ_QC(ss.fql_ch,ss.fqs_ch)
 		
 	publish:
 		long_nanoplot     = SEQ_QC.out.long_nanoplot

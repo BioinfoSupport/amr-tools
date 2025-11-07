@@ -9,6 +9,8 @@ include { SPADES    as SHORT_SPADES                      } from './subworkflows/
 include { FLYE_MEDAKA_PILON as HYBRID_FLYE_MEDAKA_PILON  } from './subworkflows/flye_medaka_pilon'
 include { FLYE_MEDAKA_PILON as LONG_FLYE_MEDAKA          } from './subworkflows/flye_medaka_pilon'
 
+
+
 workflow SEQ2ASM {
 	take:
 		opts
@@ -73,6 +75,10 @@ params.hybrid_unicycler         = false
 params.hybrid_hybracter         = false
 params.hybrid_flye_medaka_pilon = false
 
+
+import AmrUtils
+
+
 workflow {
 	main:
 		// Validate parameters and print summary of supplied ones
@@ -80,44 +86,17 @@ workflow {
 		log.info(paramsSummaryLog(workflow))
 
 		// Extract Long_read and Short_read channels from params 
-		fa_ch = Channel.empty()
-		fql_ch = Channel.empty()
-		fqs_ch = Channel.empty()
-		if (params.samplesheet) {
-				SS = Channel.fromList(samplesheetToList(params.samplesheet, "assets/schema_samplesheet.json"))
-					.multiMap({x ->
-						meta = [sample_id:x[0].sample_id]
-						fa_ch: [meta,x[0].assembly_fasta]
-						fql_ch: [meta,x[0].long_reads]
-						fqs_ch: [meta,[x[0].short_reads_1,x[0].short_reads_2]]
-					})
-				fa_ch = SS.fa_ch
-				fql_ch = SS.fql_ch
-				fqs_ch = SS.fqs_ch
-		} else {
-			if (params.fasta) {
-				fa_ch = Channel.fromPath(params.fasta)
-						.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,'')],x]})
-			}
-			if (params.long_reads) {
-				fql_ch = Channel.fromPath(params.long_reads)
-						.map({x -> [["sample_id":x.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'')],x]})
-			}
-			if (params.short_reads) {
-				fqs_ch = Channel
-						.fromFilePairs(params.short_reads,size:-1) { file -> file.name.replaceAll(/_(R?[12])(_001)?\.(fq|fastq)\.gz$/, '') }
-						.map({id,x -> [["sample_id":id],x]})
-			}
-		}
-		
+		def ss = AmrUtils.parse_generic_params(params,samplesheetToList)
+
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
-		fqs_ch = fqs_ch.branch({meta,f -> 
+		ss.fqs_ch = ss.fqs_ch.branch({meta,f -> 
 			bam: f.name =~ /\.(bam|cram)$/
 			fq: true
 		})
-		fqs_ch = fqs_ch.fq.mix(SAMTOOLS_FASTQ(fqs_ch.bam))
+		ss.fqs_ch = ss.fqs_ch.fq.mix(SAMTOOLS_FASTQ(ss.fqs_ch.bam))
 
-		SEQ2ASM(params,fqs_ch,fql_ch)
+		// Run assemblers
+		SEQ2ASM(params,ss.fqs_ch,ss.fql_ch)
 
 	publish:
 		fasta            = SEQ2ASM.out.fasta

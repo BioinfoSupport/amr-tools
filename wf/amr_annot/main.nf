@@ -241,6 +241,8 @@ params.default_cgemlst_args         = null // do not run by default
 params.default_MLST_args            = ''   // autodetect species by default
 params.default_prokka_args          = '--kingdom Bacteria'
 
+import AmrUtils
+
 workflow {
 	main:
 		// Validate parameters and print summary of supplied ones
@@ -248,39 +250,19 @@ workflow {
 		log.info(paramsSummaryLog(workflow))
 
 		// Extract Long_read and Short_read channels from params 
-		fa_ch = Channel.empty()
-		fqs_ch = Channel.empty()
-		fql_ch = Channel.empty()
-		if (params.samplesheet) {
-				SS = Channel.fromList(samplesheetToList(params.samplesheet, "assets/schema_samplesheet.json"))
-					.multiMap({x ->
-						meta = [sample_id:x[0].sample_id,assembly_name:x[0].assembly_name]
-						fa_ch: [meta,x[0].assembly_fasta]
-						fqs_ch: [meta,[x[0].short_reads_1,x[0].short_reads_2]]
-						fql_ch: [meta,x[0].long_reads]
-					})
-				fa_ch = SS.fa_ch
-				fqs_ch = SS.fqs_ch
-				fql_ch = SS.fql_ch
-		} else {
-			fa_ch = Channel.fromPath(params.fasta)
-				.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,''),assembly_name:'fasta'],x]})
-		}
-		
-		// Filter out missing values
-		fa_ch = fa_ch.filter({x,y -> y})
-		
+		def ss = AmrUtils.parse_generic_params(params,samplesheetToList)
+
 		// ------------------------------------------------------------------			
 		// Convert input files formats
 		// ------------------------------------------------------------------
 		// Uncompress .fasta.gz files when needed
-		fa_ch = fa_ch.branch({meta,f -> 
+		ss.fa_ch = fa_ch.branch({meta,f -> 
 			gz: f.name =~ /\.gz$/
 			fa: true
 		})
-		fa_ch = fa_ch.fa.mix(GZIP_DECOMPRESS_FASTA(fa_ch.gz))
+		ss.fa_ch = ss.fa_ch.fa.mix(GZIP_DECOMPRESS_FASTA(ss.fa_ch.gz))
 		
-		AMR_ANNOT(params,fa_ch,fqs_ch,fql_ch)
+		AMR_ANNOT(params,ss.fa_ch,ss.fqs_ch,ss.fql_ch)
 
 	publish:
 		orgfinder           = AMR_ANNOT.out.orgfinder
