@@ -12,6 +12,7 @@ class AmrUtils {
 		]
 		if (opts.samplesheet) {
 				ss.ss_ch = Channel.fromList(samplesheetToList(opts.samplesheet))
+				ss.ss_ch.view()
 				def SS = ss.ss_ch
 					.multiMap({x ->
 						meta = [sample_id:x[0].sample_id]
@@ -36,11 +37,21 @@ class AmrUtils {
 						.fromFilePairs(opts.short_reads,size:-1) { file -> file.name.replaceAll(/_(R?[12])(_001)?\.(fq|fastq)\.gz$/, '') }
 						.map({id,x -> [[sample_id:id],x]})
 			}
-			ss.ss_ch = ss.fa_ch
-				.join(ss.fql_ch,remainder:true)
-				.join(ss.fqs_ch,remainder:true)
-				.view()
-				.map({m,fa,lr,sr -> m + [assembly_fasta:fa,long_reads:lr,short_reads_1:(sr.size()>0?sr[0]:null),short_reads_2:(sr.size()>1?sr[1]:null)]})
+			def meta_ch = Channel.empty()
+					.mix(ss.fa_ch.map({[it[0]]}))
+					.mix(ss.fql_ch.map({[it[0]]}))
+					.mix(ss.fqs_ch.map({[it[0]]}))
+					.unique()
+				// DEBUGGING
+				/*
+				meta_ch
+					.combine(ss.fa_ch)
+					.view()
+					.combine(ss.fql_ch)
+					.join(ss.fqs_ch,remainder:true)
+				*/
+				//.map({m,fa,lr,sr -> m + [assembly_fasta:fa,long_reads:lr,short_reads_1:(sr && sr.size()>0?sr[0]:null),short_reads_2:(sr && sr.size()>1?sr[1]:null)]})
+				
 		}
 		
 		// Filter out missing files from the channels
