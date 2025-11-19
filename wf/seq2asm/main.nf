@@ -88,10 +88,6 @@ workflow {
 		// Extract Long_read and Short_read channels from params 
 		def ss = AmrUtils.parse_generic_params(params,{sheet -> samplesheetToList(sheet, "assets/schema_samplesheet.json")})
 		
-		def samples = ss.fql_ch
-			.join(ss.fqs_ch,remainder:true)
-			.map({m,lr,sr -> m + [long_reads:lr,short_reads_1:sr[0],short_reads_2:sr[1]]})
-
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
 		ss.fqs_ch = ss.fqs_ch.branch({meta,f -> 
 			bam: f.name =~ /\.(bam|cram)$/
@@ -103,7 +99,7 @@ workflow {
 		SEQ2ASM(params,ss.fqs_ch,ss.fql_ch)
 
 	publish:
-		samples    = samples
+		samples    = ss.ss_ch
 		assemblies = SEQ2ASM.out.fasta
 			.join(SEQ2ASM.out.dir,remainder:true)
 			.map({m,fa,dir -> m + [assembly_fasta:fa,assembler_output:dir]})
