@@ -98,14 +98,17 @@ workflow {
 		// Run assemblers
 		SEQ2ASM(params,ss.fqs_ch,ss.fql_ch)
 
-	publish:
-		samples    = ss.ss_ch
 		assemblies = SEQ2ASM.out.fasta
 			.join(SEQ2ASM.out.dir,remainder:true)
 			.map({m,fa,dir -> m + [assembly_fasta:fa,assembler_output:dir]})
-			.combine(ss.ss_ch)
-			.filter({x1,x2 -> x1.sample_id==x2.sample_id})
-			.map({x1,x2 -> x1+x2})
+
+	publish:
+		assemblies = assemblies
+		samples    = ss.ss_ch
+			//.combine(ss.ss_ch)
+			//.filter({x1,x2 -> x1.sample_id==x2.sample_id})
+			//.map({x1,x2 -> x1+x2})
+	
 }
 
 output {
@@ -116,8 +119,8 @@ output {
     }
 	}
 	assemblies {
-    path { x -> 
-    	x.fasta >> "samples/${x.sample_id}/assemblies/${x.assembly_name}/assembly.fasta"
+    path { x ->
+    	x.assembly_fasta >> "samples/${x.sample_id}/assemblies/${x.assembly_name}/assembly.fasta"
     	x.assembler_output >> "samples/${x.sample_id}/assemblies/${x.assembly_name}/assembler_output"
     }
     index {
