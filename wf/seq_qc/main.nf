@@ -58,7 +58,7 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-		def ss = AmrUtils.parse_generic_params(params,samplesheetToList)
+		def ss = AmrUtils.parse_generic_params(params,{sheet -> samplesheetToList(sheet, "assets/schema_samplesheet.json")})
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
 		ss.fql_ch = ss.fql_ch.branch({meta,f -> 

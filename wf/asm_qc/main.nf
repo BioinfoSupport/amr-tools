@@ -110,7 +110,7 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-		def ss = AmrUtils.parse_generic_params(params,samplesheetToList)
+		def ss = AmrUtils.parse_generic_params(params,{sheet -> samplesheetToList(sheet, "assets/schema_samplesheet.json")})
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
 		ss.fql_ch = ss.fql_ch.branch({meta,f -> 
@@ -119,7 +119,7 @@ workflow {
 		})
 		ss.fql_ch = ss.fql_ch.fq.mix(SAMTOOLS_FASTQ(ss.fql_ch.bam))
 
-		// Reads Quality Controls, get a multiQC
+		// Run Assembly QC pipeline
 		ASSEMBLY_QC(ss.fa_ch,ss.fqs_ch,ss.fql_ch)
 		
 	publish:

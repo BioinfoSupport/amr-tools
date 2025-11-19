@@ -5,12 +5,14 @@ class AmrUtils {
 
 	static def parse_generic_params(opts,samplesheetToList) {
 		def ss = [
-			fa_ch: Channel.empty(),
+			fa_ch : Channel.empty(),
 			fql_ch: Channel.empty(),
-			fqs_ch: Channel.empty()
+			fqs_ch: Channel.empty(),
+			ss_ch : Channel.empty()
 		]
 		if (opts.samplesheet) {
-				def SS = Channel.fromList(samplesheetToList(opts.samplesheet, "assets/schema_samplesheet.json"))
+				ss.ss_ch = Channel.fromList(samplesheetToList(opts.samplesheet))
+				def SS = ss.ss_ch
 					.multiMap({x ->
 						meta = [sample_id:x[0].sample_id]
 						fa_ch: [meta,x[0].assembly_fasta]
@@ -27,13 +29,18 @@ class AmrUtils {
 			}
 			if (opts.long_reads) {
 				ss.fql_ch = Channel.fromPath(opts.long_reads)
-						.map({x -> [["sample_id":x.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'')],x]})
+						.map({x -> [[sample_id:x.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'')],x]})
 			}
 			if (opts.short_reads) {
 				ss.fqs_ch = Channel
 						.fromFilePairs(opts.short_reads,size:-1) { file -> file.name.replaceAll(/_(R?[12])(_001)?\.(fq|fastq)\.gz$/, '') }
-						.map({id,x -> [["sample_id":id],x]})
+						.map({id,x -> [[sample_id:id],x]})
 			}
+			ss.ss_ch = ss.fa_ch
+				.join(ss.fql_ch,remainder:true)
+				.join(ss.fqs_ch,remainder:true)
+				.view()
+				.map({m,fa,lr,sr -> m + [assembly_fasta:fa,long_reads:lr,short_reads_1:sr[0],short_reads_2:sr[1]]})
 		}
 		
 		// Filter out missing files from the channels

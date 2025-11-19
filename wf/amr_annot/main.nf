@@ -250,13 +250,13 @@ workflow {
 		log.info(paramsSummaryLog(workflow))
 
 		// Extract Long_read and Short_read channels from params 
-		def ss = AmrUtils.parse_generic_params(params,samplesheetToList)
+		def ss = AmrUtils.parse_generic_params(params,{sheet -> samplesheetToList(sheet, "assets/schema_samplesheet.json")})
 
 		// ------------------------------------------------------------------			
 		// Convert input files formats
 		// ------------------------------------------------------------------
 		// Uncompress .fasta.gz files when needed
-		ss.fa_ch = fa_ch.branch({meta,f -> 
+		ss.fa_ch = ss.fa_ch.branch({meta,f -> 
 			gz: f.name =~ /\.gz$/
 			fa: true
 		})

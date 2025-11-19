@@ -63,9 +63,9 @@ workflow SEQ2ASM {
 // ------------------------------------------------------------------
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
-params.samplesheet = null
-params.long_reads  = []
-params.short_reads = []
+params.samplesheet              = null
+params.long_reads               = []
+params.short_reads              = []
 params.long_unicycler           = false
 params.long_hybracter           = false
 params.long_flye_medaka         = false
@@ -86,7 +86,11 @@ workflow {
 		log.info(paramsSummaryLog(workflow))
 
 		// Extract Long_read and Short_read channels from params 
-		def ss = AmrUtils.parse_generic_params(params,samplesheetToList)
+		def ss = AmrUtils.parse_generic_params(params,{sheet -> samplesheetToList(sheet, "assets/schema_samplesheet.json")})
+		
+		def samples = ss.fql_ch
+			.join(ss.fqs_ch,remainder:true)
+			.map({m,lr,sr -> m + [long_reads:lr,short_reads_1:sr[0],short_reads_2:sr[1]]})
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
 		ss.fqs_ch = ss.fqs_ch.branch({meta,f -> 
@@ -99,16 +103,31 @@ workflow {
 		SEQ2ASM(params,ss.fqs_ch,ss.fql_ch)
 
 	publish:
-		fasta            = SEQ2ASM.out.fasta
-		assembler_output = SEQ2ASM.out.dir
+		samples    = samples
+		assemblies = SEQ2ASM.out.fasta
+			.join(SEQ2ASM.out.dir,remainder:true)
+			.map({m,fa,dir -> m + [assembly_fasta:fa,assembler_output:dir]})
+			.combine(samples)
+			.filter({x1,x2 -> x1.sample_id==x2.sample_id})
+			.map({x1,x2 -> x1+x2})
 }
 
 output {
-	fasta {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/assembly.fasta"}
+	samples {
+    index {
+    	path 'indexes/seq2asm_samples.csv'
+    	header true
+    }
 	}
-	assembler_output {
-		path { m,x -> x >> "samples/${m.sample_id}/assemblies/${m.assembly_name}/assembler"}
+	assemblies {
+    path { x -> 
+    	x.fasta >> "samples/${x.sample_id}/assemblies/${x.assembly_name}/assembly.fasta"
+    	x.assembler_output >> "samples/${x.sample_id}/assemblies/${x.assembly_name}/assembler_output"
+    }
+    index {
+    	path 'indexes/seq2asm_assemblies.csv'
+    	header true
+    }
 	}
 }
 

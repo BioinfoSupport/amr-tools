@@ -23,5 +23,13 @@ process ORGFINDER_DETECT {
 		    '
 		    source "org.env"
 		    """
+		stub:
+				"""
+				mkdir -p orgfinder
+				touch orgfinder/ani.tsv
+				export ORG_NAME="xxx"
+				export ORG_ACC="xxx"
+				export ORG_ANI="90"
+				"""
 }
 
