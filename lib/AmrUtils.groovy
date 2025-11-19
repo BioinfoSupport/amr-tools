@@ -40,7 +40,7 @@ class AmrUtils {
 				.join(ss.fql_ch,remainder:true)
 				.join(ss.fqs_ch,remainder:true)
 				.view()
-				.map({m,fa,lr,sr -> m + [assembly_fasta:fa,long_reads:lr,short_reads_1:sr[0],short_reads_2:sr[1]]})
+				.map({m,fa,lr,sr -> m + [assembly_fasta:fa,long_reads:lr,short_reads_1:(sr.size()>0?sr[0]:null),short_reads_2:(sr.size()>1?sr[1]:null)]})
 		}
 		
 		// Filter out missing files from the channels
