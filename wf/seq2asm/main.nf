@@ -103,7 +103,7 @@ workflow {
 		assemblies = SEQ2ASM.out.fasta
 			.join(SEQ2ASM.out.dir,remainder:true)
 			.map({m,fa,dir -> m + [assembly_fasta:fa,assembler_output:dir]})
-			.combine(samples)
+			.combine(ss.ss_ch)
 			.filter({x1,x2 -> x1.sample_id==x2.sample_id})
 			.map({x1,x2 -> x1+x2})
 }
