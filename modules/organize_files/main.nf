@@ -12,7 +12,7 @@ process ORGANIZE_FILES {
 				if (src instanceof java.nio.file.Path) {	
 				    return "mkdir -p \$(dirname '${dest_path}') && ln -s '${src}' '${dest_path}'".stripIndent()
 				} else {
-					return "mkdir -p \$(dirname '${dest_path}') && echo '${src}' > '${dest_path}'".stripIndent()
+						return "mkdir -p \$(dirname '${dest_path}') && echo '${src}' > '${dest_path}'".stripIndent()
 				}
     	})
     """

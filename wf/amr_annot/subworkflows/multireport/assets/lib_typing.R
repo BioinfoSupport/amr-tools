@@ -5,7 +5,11 @@ library(Biostrings)
 
 read_org_name <- function(txt_file) {
 	#json_file <- "results/samples/r62b17.hdr/assembly/anninfo.json"
-	readLines(txt_file)
+	if (fs::file_exists(txt_file)) {
+		readLines(txt_file)	
+	} else {
+		NA_character_
+	}
 }
 
 
