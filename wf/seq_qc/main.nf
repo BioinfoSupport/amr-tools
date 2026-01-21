@@ -1,5 +1,5 @@
 
-include { SAMTOOLS_FASTQ    } from './modules/samtools/fastq'
+include { SAMTOOLS_FASTQ } from './modules/samtools/fastq'
 include { NANOPLOT       } from './modules/nanoplot'
 include { FASTP          } from './modules/fastp'
 include { ORGANIZE_FILES } from './modules/organize_files'
@@ -40,11 +40,25 @@ workflow SEQ_QC {
 
 
 
-
 // ------------------------------------------------------------------
 // Main entry point when running the pipeline from command line
 // ------------------------------------------------------------------
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
+
+
+process GENERATE_READSETS {
+  input:
+    val long_reads_pattern
+  output:
+    path "readsets.csv"
+  script:
+  	def lr = Channel.fromPath(long_reads_pattern).view()
+	  """
+	  touch readsets.csv
+	  """
+}
+
+
 
 params.samplesheet = null
 params.long_reads = null
@@ -58,6 +72,14 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
+
+		if (params.readsets) {
+				readsets = Channel.fromPath(params.readsets)
+		} else {
+		    readsets = GENERATE_READSETS(params.long_reads)
+		}
+		Channel.fromList(samplesheetToList(readsets, "assets/schema_readsets.json")).view()
+		
 		def ss = AmrUtils.parse_generic_params(params,{sheet -> samplesheetToList(sheet, "assets/schema_samplesheet.json")})
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format

@@ -3,18 +3,18 @@
   "type": "object",
 	"oneOf": [
 		{
-			"required": ["samplesheet"], 
+			"required": ["readsets"], 
 			"not": {"anyOf": [{"required":["long_reads"]}, {"required":["short_reads"]}]}
 		},
 		{
-			"not": {"required": ["samplesheet"]}, 
+			"not": {"required": ["readsets"]}, 
 			"anyOf": [{"required":["long_reads"]}, {"required":["short_reads"]}]
 		}
 	],
   
   "properties": {
   	
-		"samplesheet": { 
+		"readsets": { 
 			"type": "string",
 			"format": "file-path",
 			"exists": true,
