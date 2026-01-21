@@ -45,31 +45,6 @@ workflow SEQ_QC {
 // ------------------------------------------------------------------
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
-
-def readsets_from_params() {
-		def readsets = [
-      long_reads : Channel.empty(),
-      short_reads: Channel.empty(),
-      csv:         Channel.empty()
-		]
-  	if (params.long_reads) {
-  		readsets.long_reads = Channel.fromPath(params.long_reads)
-  			.map({id=it.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'');[[sample_id:id,readset_id:id],it]})
-  	}
-  	if (params.short_reads) {
-			readsets.short_reads = Channel.fromFilePairs(params.short_reads,size:-1) { 
-					file -> file.name.replaceAll(/_(R?[12])(_001)?\.(fq|fastq)\.gz$/, '') 
-				}
-				.map({id,x -> [[sample_id:id,readset_id:id],x]})
-  	}
-		def meta_ch = readsets.long_reads.map({it[0]}).mix(readsets.short_reads.map({it[0]})).unique()
-		readsets.csv = meta_ch
-			.join(readsets.long_reads,failOnDuplicate:true,remainder:true)
-			.join(readsets.short_reads,failOnDuplicate:true,remainder:true)
-		return readsets
-}
-
-
 params.readsets = null
 params.long_reads = null
 params.short_reads = null
@@ -82,18 +57,7 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-
-		def readsets = null
-		if (params.readsets) {
-				readsets = Channel.fromList(samplesheetToList(params.readsets,"assets/schema_readsets.json"))
-					.map({it[0].sample_id = it[0].sample_id?:it[0].readset_id;it})
-				readsets = [
-					fql_ch: readsets.map({[it[0],it[1]]}).filter({it[1]}),
-					fqs_ch: readsets.map({[it[0],[it[2],it[3]]]}).filter({it[1].findAll({it})})
-				]
-		} else {
-		    readsets = readsets_from_params()
-		}
+		def readsets = AmrUtils.get_readsets(params,{sheet,schema -> samplesheetToList(sheet, schema)})
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
 		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
@@ -107,9 +71,9 @@ workflow {
 
 		// Reads Quality Controls, get a multiQC
 		SEQ_QC(readsets.short_reads,readsets.long_reads)
-	
-
+    
 	publish:
+	  readsets_csv      = readsets.csv
 		long_nanoplot     = SEQ_QC.out.long_nanoplot
 		short_fastp_json  = SEQ_QC.out.short_fastp_json
 		short_fastp_html  = SEQ_QC.out.short_fastp_html
@@ -117,6 +81,12 @@ workflow {
 }
 
 output {
+	readsets_csv {
+    index {
+    	path 'indexes/seq_qc_readsets.csv'
+    	header true
+    }
+	}
 	long_nanoplot {
 		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/long_nanoplot"}
 	}

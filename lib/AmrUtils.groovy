@@ -2,6 +2,38 @@
 import nextflow.Channel
 
 class AmrUtils {
+	
+	static def get_readsets(opts,samplesheetToList) {
+		def readsets = [
+      long_reads : Channel.empty(),
+      short_reads: Channel.empty(),
+      csv:         Channel.empty()
+		]
+		if (opts.readsets) {
+				readsets.csv = Channel.fromList(samplesheetToList(opts.readsets,"assets/schema_readsets.json"))
+					.map({it[0].sample_id = it[0].sample_id?:it[0].readset_id;it})
+					.map({[it[0],it[1],[it[2],it[3]]]})
+				readsets.long_reads  = readsets.csv.map({[it[0],it[1]]}).filter({it[1]})
+				readsets.short_reads = readsets.csv.map({[it[0],it[2]]}).filter({it[1].findAll({it})})
+		} else {
+	  	if (opts.long_reads) {
+	  		readsets.long_reads = Channel.fromPath(opts.long_reads)
+	  			.map({def id=it.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'');[[sample_id:id,readset_id:id],it]})
+	  	}
+	  	if (opts.short_reads) {
+				readsets.short_reads = Channel.fromFilePairs(opts.short_reads,size:-1) { 
+						file -> file.name.replaceAll(/_(R?[12])(_001)?\.(fq|fastq)\.gz$/, '') 
+					}
+					.map({id,x -> [[sample_id:id,readset_id:id],x]})
+	  	}
+			def meta_ch = readsets.long_reads.map({it[0]}).mix(readsets.short_reads.map({it[0]})).unique()
+			readsets.csv = meta_ch
+				.join(readsets.long_reads,failOnDuplicate:true,remainder:true)
+				.join(readsets.short_reads,failOnDuplicate:true,remainder:true)
+		}
+		return readsets
+	}
+
 
 	static def parse_generic_params(opts,samplesheetToList) {
 		def ss = [
