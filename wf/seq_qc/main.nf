@@ -47,30 +47,26 @@ include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin
 
 
 def readsets_from_params() {
-  	def lr = Channel.empty()
-  	def sr = Channel.empty()
+		def readsets = [
+      long_reads : Channel.empty(),
+      short_reads: Channel.empty(),
+      csv:         Channel.empty()
+		]
   	if (params.long_reads) {
-  		lr = Channel.fromPath(params.long_reads)
-  			.map({x -> [[readset_id:x.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'')],x]})
+  		readsets.long_reads = Channel.fromPath(params.long_reads)
+  			.map({id=it.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'');[[sample_id:id,readset_id:id],it]})
   	}
   	if (params.short_reads) {
-			sr = Channel.fromFilePairs(params.short_reads,size:-1) { 
+			readsets.short_reads = Channel.fromFilePairs(params.short_reads,size:-1) { 
 					file -> file.name.replaceAll(/_(R?[12])(_001)?\.(fq|fastq)\.gz$/, '') 
 				}
-				.map({id,x -> [[readset_id:id],x]})
+				.map({id,x -> [[sample_id:id,readset_id:id],x]})
   	}
-		
-		def meta_ch = lr.map({it[0]}).mix(sr.map({it[0]})).unique()
-		def readsets_ch = meta_ch
-			.join(lr,failOnDuplicate:true,remainder:true)
-			.join(sr,failOnDuplicate:true,remainder:true)
-			.map({it[0].sample_id = it[0].sample_id?:it[0].readset_id;it})
-			.view()
-		def readsets = [
-			fql_ch: readsets_ch.map({[it[0],it[1]]}).filter({it[1]}),
-			fqs_ch: readsets_ch.map({[it[0],it[2]]}).filter({it[1].findAll({it})})
-		]
-		readsets
+		def meta_ch = readsets.long_reads.map({it[0]}).mix(readsets.short_reads.map({it[0]})).unique()
+		readsets.csv = meta_ch
+			.join(readsets.long_reads,failOnDuplicate:true,remainder:true)
+			.join(readsets.short_reads,failOnDuplicate:true,remainder:true)
+		return readsets
 }
 
 
@@ -96,21 +92,21 @@ workflow {
 					fqs_ch: readsets.map({[it[0],[it[2],it[3]]]}).filter({it[1].findAll({it})})
 				]
 		} else {
-		    readsets = generate_readsets_csv_from_params()
+		    readsets = readsets_from_params()
 		}
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
-		readsets.fql_ch = readsets.fql_ch.branch({meta,f -> 
+		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
 			bam: f.name =~ /\.(bam|cram)$/
 			fq: true
 		})
-		readsets.fql_ch = readsets.fql_ch.fq.mix(SAMTOOLS_FASTQ(readsets.fql_ch.bam))
+		readsets.long_reads = readsets.long_reads.fq.mix(SAMTOOLS_FASTQ(readsets.long_reads.bam))
 
 		// Reduce FASTQ size if needed
 		//lr_ch = FQ_SUBSAMPLE(readsets.lr_ch)
 
 		// Reads Quality Controls, get a multiQC
-		SEQ_QC(readsets.fqs_ch,readsets.fql_ch)
+		SEQ_QC(readsets.short_reads,readsets.long_reads)
 	
 
 	publish:
