@@ -45,17 +45,33 @@ workflow SEQ_QC {
 // ------------------------------------------------------------------
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
-/*
-process GENERATE_READSETS {
-  output:
-    path "readsets.csv"
-  script:
-  	//def lr = Channel.fromPath(long_reads_pattern)
-	  """
-	  touch readsets.csv
-	  """
+
+def readsets_from_params() {
+  	def lr = Channel.empty()
+  	def sr = Channel.empty()
+  	if (params.long_reads) {
+  		lr = Channel.fromPath(params.long_reads)
+  			.map({x -> [[readset_id:x.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'')],x]})
+  	}
+  	if (params.short_reads) {
+			sr = Channel.fromFilePairs(params.short_reads,size:-1) { 
+					file -> file.name.replaceAll(/_(R?[12])(_001)?\.(fq|fastq)\.gz$/, '') 
+				}
+				.map({id,x -> [[readset_id:id],x]})
+  	}
+		
+		def meta_ch = lr.map({it[0]}).mix(sr.map({it[0]})).unique()
+		def readsets_ch = meta_ch
+			.join(lr,failOnDuplicate:true,remainder:true)
+			.join(sr,failOnDuplicate:true,remainder:true)
+			.map({it[0].sample_id = it[0].sample_id?:it[0].readset_id;it})
+			.view()
+		def readsets = [
+			fql_ch: readsets_ch.map({[it[0],it[1]]}).filter({it[1]}),
+			fqs_ch: readsets_ch.map({[it[0],it[2]]}).filter({it[1].findAll({it})})
+		]
+		readsets
 }
-*/
 
 
 params.readsets = null
@@ -69,32 +85,34 @@ workflow {
 		// Validate parameters and print summary of supplied ones
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
-/*
+
+
+		def readsets = null
 		if (params.readsets) {
-				readsets = Channel.fromPath(params.readsets,checkIfExists:true)
+				readsets = Channel.fromList(samplesheetToList(params.readsets,"assets/schema_readsets.json"))
+					.map({it[0].sample_id = it[0].sample_id?:it[0].readset_id;it})
+				readsets = [
+					fql_ch: readsets.map({[it[0],it[1]]}).filter({it[1]}),
+					fqs_ch: readsets.map({[it[0],[it[2],it[3]]]}).filter({it[1].findAll({it})})
+				]
 		} else {
-		    readsets = GENERATE_READSETS()
+		    readsets = generate_readsets_csv_from_params()
 		}
-		println(readsets.collect())
-		//println(readsets.map({samplesheetToList(it, "assets/schema_readsets.json")}))
-		//Channel.fromList(samplesheetToList(readsets, "assets/schema_readsets.json")).view()
-*/		
-		
-		def ss = AmrUtils.parse_generic_params(params,{sheet -> samplesheetToList(sheet, "assets/schema_samplesheet.json")})
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
-		ss.fql_ch = ss.fql_ch.branch({meta,f -> 
+		readsets.fql_ch = readsets.fql_ch.branch({meta,f -> 
 			bam: f.name =~ /\.(bam|cram)$/
 			fq: true
 		})
-		ss.fql_ch = ss.fql_ch.fq.mix(SAMTOOLS_FASTQ(ss.fql_ch.bam))
+		readsets.fql_ch = readsets.fql_ch.fq.mix(SAMTOOLS_FASTQ(readsets.fql_ch.bam))
 
 		// Reduce FASTQ size if needed
-		//lr_ch = FQ_SUBSAMPLE(ss.lr_ch)
+		//lr_ch = FQ_SUBSAMPLE(readsets.lr_ch)
 
 		// Reads Quality Controls, get a multiQC
-		SEQ_QC(ss.fqs_ch,ss.fql_ch)
-		
+		SEQ_QC(readsets.fqs_ch,readsets.fql_ch)
+	
+
 	publish:
 		long_nanoplot     = SEQ_QC.out.long_nanoplot
 		short_fastp_json  = SEQ_QC.out.short_fastp_json

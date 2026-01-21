@@ -13,24 +13,36 @@
         "errorMessage": "Identifier for the readset, must be provided and cannot contain spaces",
         "meta": "readset_id"
       },
+      "sample_id": {
+        "type": "string",
+        "pattern": "^\\S+$",
+        "errorMessage": "Identifier for the sample the readset belong to, by default equal to readset_id",
+        "meta": "sample_id"
+      },      
+      "long_reads": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true,
+        "pattern": "^\\S+\\.(bam|fastq\\.gz|fq\\.gz)$",
+        "errorMessage": "Wrong path provided (cannot contain spaces and must end with .bam, .fastq.gz or .fq.gz)",
+      },
       "short_reads_1": {
         "type": "string",
         "format": "file-path",
+        "exists": true,
         "pattern": "^\\S+\\.(fastq|fq)\\.gz$",
         "errorMessage": "Wrong path provided (cannot contain spaces and must end with .fastq.gz or .fq.gz)",
       },
       "short_reads_2": {
         "type": "string",
         "format": "file-path",
+        "exists": true,
         "pattern": "^\\S+\\.(fastq|fq)\\.gz$",
         "errorMessage": "Wrong path provided (cannot contain spaces and must end with .fastq.gz or .fq.gz)",
-      },
-      "long_reads": {
-        "type": "string",
-        "format": "file-path",
-        "pattern": "^\\S+\\.(bam|fastq\\.gz|fq\\.gz)$",
-        "errorMessage": "Wrong path provided (cannot contain spaces and must end with .bam, .fastq.gz or .fq.gz)",
       }
     }
-  }
+  },
+	"allOf": [
+	  {"uniqueEntries": ["readset_id"]}
+	]
 }
