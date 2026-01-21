@@ -45,22 +45,20 @@ workflow SEQ_QC {
 // ------------------------------------------------------------------
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
-
+/*
 process GENERATE_READSETS {
-  input:
-    val long_reads_pattern
   output:
     path "readsets.csv"
   script:
-  	def lr = Channel.fromPath(long_reads_pattern).view()
+  	//def lr = Channel.fromPath(long_reads_pattern)
 	  """
 	  touch readsets.csv
 	  """
 }
+*/
 
 
-
-params.samplesheet = null
+params.readsets = null
 params.long_reads = null
 params.short_reads = null
 
@@ -71,14 +69,16 @@ workflow {
 		// Validate parameters and print summary of supplied ones
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
-
-
+/*
 		if (params.readsets) {
-				readsets = Channel.fromPath(params.readsets)
+				readsets = Channel.fromPath(params.readsets,checkIfExists:true)
 		} else {
-		    readsets = GENERATE_READSETS(params.long_reads)
+		    readsets = GENERATE_READSETS()
 		}
-		Channel.fromList(samplesheetToList(readsets, "assets/schema_readsets.json")).view()
+		println(readsets.collect())
+		//println(readsets.map({samplesheetToList(it, "assets/schema_readsets.json")}))
+		//Channel.fromList(samplesheetToList(readsets, "assets/schema_readsets.json")).view()
+*/		
 		
 		def ss = AmrUtils.parse_generic_params(params,{sheet -> samplesheetToList(sheet, "assets/schema_samplesheet.json")})
 
