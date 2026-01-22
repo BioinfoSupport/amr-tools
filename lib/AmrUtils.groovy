@@ -7,18 +7,22 @@ class AmrUtils {
 		def readsets = [
       long_reads : Channel.empty(),
       short_reads: Channel.empty(),
-      csv:         Channel.empty()
+      ss         : Channel.empty(),
+      csv        : Channel.empty()
 		]
+		
 		if (opts.readsets) {
-				readsets.csv = Channel.fromList(samplesheetToList(opts.readsets,"assets/schema_readsets.json"))
+				readsets.ss = Channel.fromList(samplesheetToList(opts.readsets,"assets/schema_readsets.json"))
 					.map({it[0].sample_id = it[0].sample_id?:it[0].readset_id;it})
-					.map({[it[0],it[1],[it[2],it[3]]]})
-				readsets.long_reads  = readsets.csv.map({[it[0],it[1]]}).filter({it[1]})
-				readsets.short_reads = readsets.csv.map({[it[0],it[2]]}).filter({it[1].findAll({it})})
+				readsets.long_reads  = readsets.ss.map({[it[0],it[1]]}).filter({it[1]})
+				readsets.short_reads = readsets.ss.map({[it[0],[it[2],it[3]]]}).filter({it[1].findAll({it})})
 		} else {
 	  	if (opts.long_reads) {
 	  		readsets.long_reads = Channel.fromPath(opts.long_reads)
-	  			.map({def id=it.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'');[[sample_id:id,readset_id:id],it]})
+	  			.map({
+	  				def id = it.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'')
+	  				[[sample_id:id,readset_id:id],it]
+	  			})
 	  	}
 	  	if (opts.short_reads) {
 				readsets.short_reads = Channel.fromFilePairs(opts.short_reads,size:-1) { 
@@ -27,10 +31,21 @@ class AmrUtils {
 					.map({id,x -> [[sample_id:id,readset_id:id],x]})
 	  	}
 			def meta_ch = readsets.long_reads.map({it[0]}).mix(readsets.short_reads.map({it[0]})).unique()
-			readsets.csv = meta_ch
-				.join(readsets.long_reads,failOnDuplicate:true,remainder:true)
-				.join(readsets.short_reads,failOnDuplicate:true,remainder:true)
+			readsets.ss = meta_ch
+				.join(readsets.long_reads.ifEmpty(['__sentinel__',null]),failOnDuplicate:true,remainder:true)
+				.join(readsets.short_reads.ifEmpty(['__sentinel__',null]),failOnDuplicate:true,remainder:true)
+				.map({[it[0],it[1],it[2]?it[2][0]:null,it[2]?it[2][1]:null]})
+				.filter({it[0]!='__sentinel__'})
 		}
+		
+		readsets.csv = readsets.ss.map({[
+			readset_id: it[0].readset_id,
+			sample_id:  it[0].sample_id,
+			long_reads: it[1],
+			short_reads_1: it[2],
+			short_reads_2: it[3]
+		]})
+
 		return readsets
 	}
 
