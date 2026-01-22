@@ -41,9 +41,9 @@ class AmrUtils {
 		readsets.csv = readsets.ss.map({[
 			readset_id: it[0].readset_id,
 			sample_id:  it[0].sample_id,
-			long_reads: it[1],
-			short_reads_1: it[2],
-			short_reads_2: it[3]
+			long_reads: it[1]?it[1]:null,
+			short_reads_1: it[2]?it[2]:null,
+			short_reads_2: it[3]?it[3]:null
 		]})
 
 		return readsets
@@ -59,7 +59,6 @@ class AmrUtils {
 		]
 		if (opts.samplesheet) {
 				ss.ss_ch = Channel.fromList(samplesheetToList(opts.samplesheet))
-				ss.ss_ch.view()
 				def SS = ss.ss_ch
 					.multiMap({x ->
 						meta = [sample_id:x[0].sample_id]
