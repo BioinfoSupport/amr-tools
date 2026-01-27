@@ -43,6 +43,7 @@ workflow SEQ_QC {
 // ------------------------------------------------------------------
 // Main entry point when running the pipeline from command line
 // ------------------------------------------------------------------
+import AmrUtils
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 params.readsets = [
@@ -50,8 +51,6 @@ params.readsets = [
 	long_reads  : [],
 	short_reads : []
 ]
-
-import AmrUtils
 
 workflow {
 	main:

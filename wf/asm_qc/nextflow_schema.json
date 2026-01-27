@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+		"readsets": {
+      "$ref": "./nextflow_schema_readsets.json"
+    },
+    "fasta": {
+			"type": "string",
+			"format": "file-path-pattern",
+			"exists": true,
+			"pattern": "^\\S+\\.(fasta\\.gz|fa\\.gz)$",
+			"description": "Path to FASTA.GZ files containing assembly contigs, no space allowed"
+    }
+  }
+}
+
+

@@ -95,14 +95,15 @@ workflow ASSEMBLY_QC {
 // ------------------------------------------------------------------
 // Main entry point when running the pipeline from command line
 // ------------------------------------------------------------------
+import AmrUtils
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
-params.samplesheet = null
-params.fasta       = null
-params.long_reads  = null
-params.short_reads = null
-
-import AmrUtils
+params.readsets = [
+	csv         : null,
+	long_reads  : [],
+	short_reads : []
+]
+params.fasta = null
 
 workflow {
 	main:
@@ -110,17 +111,22 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-		def ss = AmrUtils.parse_generic_params(params,{sheet -> samplesheetToList(sheet, "assets/schema_samplesheet.json")})
+		def readsets = AmrUtils.get_readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
-		ss.fql_ch = ss.fql_ch.branch({meta,f -> 
+		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
 			bam: f.name =~ /\.(bam|cram)$/
 			fq: true
 		})
-		ss.fql_ch = ss.fql_ch.fq.mix(SAMTOOLS_FASTQ(ss.fql_ch.bam))
+		readsets.long_reads = readsets.long_reads.fq.mix(SAMTOOLS_FASTQ(readsets.long_reads.bam))
+
+		if (params.fasta) {
+			fa_ch = Channel.fromPath(params.fasta)
+					.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,'')],x]})
+		}
 
 		// Run Assembly QC pipeline
-		ASSEMBLY_QC(ss.fa_ch,ss.fqs_ch,ss.fql_ch)
+		ASSEMBLY_QC(fa_ch,readsets.short_reads,readsets.long_reads)
 		
 	publish:
 		assembly_multiqc_txt  = ASSEMBLY_QC.out.assembly_multiqc_txt
