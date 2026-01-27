@@ -11,8 +11,8 @@ class AmrUtils {
       csv        : Channel.empty()
 		]
 		
-		if (opts.readsets) {
-				readsets.ss = Channel.fromList(samplesheetToList(opts.readsets,"assets/schema_readsets.json"))
+		if (opts.csv) {
+				readsets.ss = Channel.fromList(samplesheetToList(opts.csv,"assets/schema_readsets.json"))
 					.map({it[0].sample_id = it[0].sample_id?:it[0].readset_id;it})
 				readsets.long_reads  = readsets.ss.map({[it[0],it[1]]}).filter({it[1]})
 				readsets.short_reads = readsets.ss.map({[it[0],[it[2],it[3]]]}).filter({it[1].findAll({it})})

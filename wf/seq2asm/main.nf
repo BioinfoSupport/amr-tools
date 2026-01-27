@@ -61,31 +61,35 @@ workflow SEQ2ASM {
 // ------------------------------------------------------------------
 // Main entry point when running the pipeline from command line
 // ------------------------------------------------------------------
+import AmrUtils
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
-params.long_reads               = []
-params.short_reads              = []
-params.long_unicycler           = false
-params.long_hybracter           = false
-params.long_flye_medaka         = false
-params.short_spades             = false
-params.short_unicycler          = false
-params.hybrid_unicycler         = false
-params.hybrid_hybracter         = false
-params.hybrid_flye_medaka_pilon = false
+params.readsets = [
+	csv         : null,
+	long_reads  : [],
+	short_reads : []
+]
 
-
-import AmrUtils
-
+params.assembler = [
+	long_unicycler           : false,
+	long_hybracter           : false,
+	long_flye_medaka         : false,
+	short_spades             : false,
+	short_unicycler          : false,
+	hybrid_unicycler         : false,
+	hybrid_hybracter         : false,
+	hybrid_flye_medaka_pilon : false
+]
 
 workflow {
 	main:
+		
 		// Validate parameters and print summary of supplied ones
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
 		// Extract Long_read and Short_read channels from params 
-		def readsets = AmrUtils.get_readsets(params,{sheet,schema -> samplesheetToList(sheet, schema)})
+		def readsets = AmrUtils.get_readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
 		
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
 		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
@@ -95,7 +99,7 @@ workflow {
 		readsets.long_reads = readsets.long_reads.fq.mix(SAMTOOLS_FASTQ(readsets.long_reads.bam))
 
 		// Run assemblers
-		SEQ2ASM(params,readsets.short_reads,readsets.long_reads)
+		SEQ2ASM(params.assembler,readsets.short_reads,readsets.long_reads)
 
 		assemblies = SEQ2ASM.out.fasta
 			.join(SEQ2ASM.out.dir,remainder:true)

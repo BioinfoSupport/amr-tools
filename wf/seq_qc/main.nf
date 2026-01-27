@@ -45,9 +45,11 @@ workflow SEQ_QC {
 // ------------------------------------------------------------------
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
-params.readsets = null
-params.long_reads = null
-params.short_reads = null
+params.readsets = [
+	csv         : null,
+	long_reads  : [],
+	short_reads : []
+]
 
 import AmrUtils
 
@@ -57,7 +59,7 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-		def readsets = AmrUtils.get_readsets(params,{sheet,schema -> samplesheetToList(sheet, schema)})
+		def readsets = AmrUtils.get_readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
 		readsets.long_reads = readsets.long_reads.branch({meta,f -> 

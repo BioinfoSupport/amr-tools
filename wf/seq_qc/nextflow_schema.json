@@ -1,41 +1,44 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-	"oneOf": [
-		{
-			"required": ["readsets"], 
-			"not": {"anyOf": [{"required":["long_reads"]}, {"required":["short_reads"]}]}
-		},
-		{
-			"not": {"required": ["readsets"]}, 
-			"anyOf": [{"required":["long_reads"]}, {"required":["short_reads"]}]
-		}
-	],
-  
   "properties": {
   	
-		"readsets": { 
-			"type": "string",
-			"format": "file-path",
-			"exists": true,
-			"pattern": "^\\S+\\.(csv)$",
-			"description": "Path to a CSV file containing the sample sheet."
-		},
-		
-		"long_reads": {
-			"type": "string",
-			"format": "file-path-pattern",
-			"exists": true,
-			"pattern": "^\\S+\\.(bam|fastq\\.gz|fq\\.gz)$",
-			"description": "Path to BAM or FASTQ.GZ files containing ONT reads"
-		},
-		
-		"short_reads": {
-			"type": "string",
-			"format": "file-path-pattern",
-			"exists": true,
-			"pattern": "^\\S+\\.(fastq\\.gz|fq\\.gz)$",
-			"description": "Path to FASTQ.GZ files containing short reads. Pairend-end files are reconized when ending with regex pattern '_(R?[12])(_001)?.(fq|fastq).gz$'"
+		"readsets": {
+			"title": "Readsets definition",
+			"type": "object",
+			"oneOf": [
+				{
+					"required": ["csv"], 
+					"not": {"anyOf": [{"required":["long_reads"]}, {"required":["short_reads"]}]}
+				},
+				{
+					"not": {"required": ["csv"]}, 
+					"anyOf": [{"required":["long_reads"]}, {"required":["short_reads"]}]
+				}
+			],			
+			"properties": {
+				"csv": {
+					"type": "string",
+					"format": "file-path",
+					"exists": true,
+					"pattern": "^\\S+\\.(csv)$",
+					"description": "Path to a CSV file containing the sample sheet."
+				},
+				"long_reads": {
+					"type": "string",
+					"format": "file-path-pattern",
+					"exists": true,
+					"pattern": "^\\S+\\.(bam|fastq\\.gz|fq\\.gz)$",
+					"description": "Path to BAM or FASTQ.GZ files containing ONT reads"
+				},
+				"short_reads": {
+					"type": "string",
+					"format": "file-path-pattern",
+					"exists": true,
+					"pattern": "^\\S+\\.(fastq\\.gz|fq\\.gz)$",
+					"description": "Path to FASTQ.GZ files containing short reads. Pairend-end files are reconized when ending with regex pattern '_(R?[12])(_001)?.(fq|fastq).gz$'"
+				}
+			}
 		}
 		
   }
