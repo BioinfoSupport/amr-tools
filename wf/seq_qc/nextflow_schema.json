@@ -22,7 +22,7 @@
 					"format": "file-path",
 					"exists": true,
 					"pattern": "^\\S+\\.(csv)$",
-					"description": "Path to a CSV file containing the sample sheet."
+					"description": "Path to a CSV file containing the readsets."
 				},
 				"long_reads": {
 					"type": "string",
