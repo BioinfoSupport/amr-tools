@@ -63,7 +63,6 @@ workflow SEQ2ASM {
 // ------------------------------------------------------------------
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
-params.samplesheet              = null
 params.long_reads               = []
 params.short_reads              = []
 params.long_unicycler           = false
@@ -86,35 +85,31 @@ workflow {
 		log.info(paramsSummaryLog(workflow))
 
 		// Extract Long_read and Short_read channels from params 
-		def ss = AmrUtils.parse_generic_params(params,{sheet -> samplesheetToList(sheet, "assets/schema_samplesheet.json")})
+		def readsets = AmrUtils.get_readsets(params,{sheet,schema -> samplesheetToList(sheet, schema)})
 		
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
-		ss.fqs_ch = ss.fqs_ch.branch({meta,f -> 
+		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
 			bam: f.name =~ /\.(bam|cram)$/
 			fq: true
 		})
-		ss.fqs_ch = ss.fqs_ch.fq.mix(SAMTOOLS_FASTQ(ss.fqs_ch.bam))
+		readsets.long_reads = readsets.long_reads.fq.mix(SAMTOOLS_FASTQ(readsets.long_reads.bam))
 
 		// Run assemblers
-		SEQ2ASM(params,ss.fqs_ch,ss.fql_ch)
+		SEQ2ASM(params,readsets.short_reads,readsets.long_reads)
 
 		assemblies = SEQ2ASM.out.fasta
 			.join(SEQ2ASM.out.dir,remainder:true)
 			.map({m,fa,dir -> m + [assembly_fasta:fa,assembler_output:dir]})
 
 	publish:
-		assemblies = assemblies
-		samples    = ss.ss_ch
-			//.combine(ss.ss_ch)
-			//.filter({x1,x2 -> x1.sample_id==x2.sample_id})
-			//.map({x1,x2 -> x1+x2})
-	
+		assemblies   = assemblies
+		readsets_csv = readsets.csv
 }
 
 output {
-	samples {
+	readsets_csv {
     index {
-    	path 'indexes/seq2asm_samples.csv'
+    	path 'indexes/seq2asm_readsets.csv'
     	header true
     }
 	}
