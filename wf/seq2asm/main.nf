@@ -119,7 +119,7 @@ output {
 	}
 	assemblies {
     path { x ->
-    	x.assembly_fasta >> "samples/${x.sample_id}/assemblies/${x.assembly_name}/assembly.fasta"
+    	x.assembly_fasta >> "samples/${x.sample_id}/assemblies/${x.assembly_name}/asm.fasta"
     	x.assembler_output >> "samples/${x.sample_id}/assemblies/${x.assembly_name}/assembler_output"
     }
     index {
