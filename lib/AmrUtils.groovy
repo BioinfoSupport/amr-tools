@@ -49,6 +49,45 @@ class AmrUtils {
 		return readsets
 	}
 
+	static def get_assemblies(opts,samplesheetToList) {
+		def assemblies = [
+      fasta : Channel.empty(),
+      ss    : Channel.empty(),
+      csv   : Channel.empty()
+		]
+		
+		if (opts.csv) {
+				assemblies.ss = Channel.fromList(samplesheetToList(opts.csv,"assets/schema/sheets/assemblies.json"))
+					.map({it[0].sample_id = it[0].sample_id?:it[0].assembly_id;it})
+				assemblies.fasta  = assemblies.ss.map({[it[0],it[1]]}).filter({it[1]})
+		} else {
+	  	if (opts.fasta) {
+	  		assemblies.fasta = Channel.fromPath(opts.fasta)
+	  			.map({
+	  				def id = it.name.replaceAll(/\.(fasta|fa)$/,'')
+	  				[[sample_id:id,assembly_id:id],it]
+	  			})
+	  	}
+			def meta_ch = assemblies.fasta.map({it[0]}).unique()
+			assemblies.ss = meta_ch
+				.join(assemblies.fasta.ifEmpty(['__sentinel__',null]),failOnDuplicate:true,remainder:true)
+				.map({[it[0],it[1]]})
+				.filter({it[0]!='__sentinel__'})
+		}
+		
+		assemblies.csv = assemblies.ss.map({[
+			assembly_id: it[0].assembly_id,
+			sample_id:  it[0].sample_id,
+			fasta: it[1]?it[1]:null,
+			assembler_name: it[0].assembler_name?:null,
+			assembler_readset_id: it[0].assembler_readset_id?:null,
+			assembler_parameters: it[0].assembler_parameters?:null
+		]})
+
+		return assemblies
+	}
+	
+	
 
 	static def parse_generic_params(opts,samplesheetToList) {
 		def ss = [
