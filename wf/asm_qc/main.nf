@@ -112,8 +112,8 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-		def readsets = AmrUtils.get_readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
-		def assemblies = AmrUtils.get_readsets(params.assemblies,{sheet,schema -> samplesheetToList(sheet, schema)})
+		def readsets   = AmrUtils.get_readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
+		def assemblies = AmrUtils.get_assemblies(params.assemblies,{sheet,schema -> samplesheetToList(sheet, schema)})
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
 		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
