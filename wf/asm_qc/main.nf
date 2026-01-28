@@ -112,6 +112,7 @@ workflow {
 		log.info(paramsSummaryLog(workflow))
 
 		def readsets = AmrUtils.get_readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
+		def assemblies = AmrUtils.get_readsets(params.assemblies,{sheet,schema -> samplesheetToList(sheet, schema)})
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
 		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
@@ -120,13 +121,8 @@ workflow {
 		})
 		readsets.long_reads = readsets.long_reads.fq.mix(SAMTOOLS_FASTQ(readsets.long_reads.bam))
 
-		if (params.fasta) {
-			fa_ch = Channel.fromPath(params.fasta)
-					.map({x -> [[sample_id:x.name.replaceAll(/\.(fasta|fa|fna)(\.gz)?$/,'')],x]})
-		}
-
 		// Run Assembly QC pipeline
-		ASSEMBLY_QC(fa_ch,readsets.short_reads,readsets.long_reads)
+		ASSEMBLY_QC(assemblies.fasta,readsets.short_reads,readsets.long_reads)
 		
 	publish:
 		assembly_multiqc_txt  = ASSEMBLY_QC.out.assembly_multiqc_txt

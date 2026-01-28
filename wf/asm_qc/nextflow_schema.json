@@ -82,7 +82,7 @@
         },
         "fasta": {
           "type": "string",
-          "format": "file-path",
+          "format": "file-path-pattern",
           "exists": true,
           "pattern": "^\\S+\\.(fasta|fa)$",
           "description": "Path to FASTA file containing assembly contigs"
