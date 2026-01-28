@@ -3,10 +3,10 @@
   "type": "object",
   "properties": {
 		"readsets": {
-      "$ref": "./nextflow_schema_readsets.json"
+      "$ref": "assets/schema/params/readsets.json"
     },
 		"assembler": {
-			"$ref": "./nextflow_schema_assembler.json"
+			"$ref": "assets/schema/params/assembly.json"
 		}
   }
 }
