@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "nf-amr pipeline - assemblies.csv sheet schema",
+  "description": "Schema for assemblies.csv sheets",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["assembly_id","fasta"],
+    "properties": {
+      "assembly_id": {
+        "type": "string",
+        "pattern": "^\\S+$",
+        "description": "Identifier for the assembly, must be provided and cannot contain spaces",
+        "meta": "assembly_id"
+      },
+      "fasta": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true,
+        "pattern": "^\\S+\\.(fasta|fa)$",
+        "description": "Path the FASTA file containing the assembly",
+      },
+      "sample_id": {
+        "type": "string",
+        "pattern": "^\\S+$",
+        "description": "Identifier for the sample the assembly belong to (equal to assembly_id by default)",
+        "meta": "sample_id"
+      },
+
+			"assembler_name": {
+        "type": "string",
+        "pattern": "^\\S+$",
+        "description": "Name of the assembler that have produced the assembly",
+        "meta": "assembler_name",
+        "default": "unknown"
+      },
+			"assembler_readset_id": {
+        "type": "string",
+        "description": "Parameters ",
+        "meta": "assembler_readset_id"
+      },
+			"assembler_parameters": {
+        "type": "string",
+        "description": "Parameters ",
+        "meta": "assembler_parameters"
+      }
+      
+    }
+  },
+	"allOf": [
+	  {"uniqueEntries": ["assembly_id"]}
+	]
+}

@@ -1,46 +1,20 @@
 {
-	"title": "Assembler definition",
+	"title": "Assemblies definition",
 	"type": "object",
 	"properties": {
-		"long_flye_medaka": {
-			"type": "boolean",
-			"default": false,
-			"description": "Run flye+medaka assembler on long reads"
+		"csv": {
+			"type": "string",
+			"format": "file-path",
+			"exists": true,
+			"pattern": "^\\S+\\.(csv)$",
+			"description": "Path to a CSV file containing the readsets."
 		},
-		"long_hybracter": {
-			"type": "boolean",
-			"default": false,
-			"description": "Run hybracter assembler on long reads"
-		},
-		"long_unicycler": {
-			"type": "boolean",
-			"default": false,
-			"description": "Run unicycler assembler on long reads"
-		},
-		"short_spades": {
-			"type": "boolean",
-			"default": false,
-			"description": "Run spades on short reads"
-		},
-		"short_unicycler": {
-			"type": "boolean",
-			"default": false,
-			"description": "Run unicycler on short reads"
-		},
-		"hybrid_unicycler": {
-			"type": "boolean",
-			"default": false,
-			"description": "Run unicycler with both long and short reads"
-		},
-		"hybrid_hybracter": {
-			"type": "boolean",
-			"default": false,
-			"description": "Run hybracter with both long and short reads"
-		},
-		"hybrid_flye_medaka_pilon": {
-			"type": "boolean",
-			"default": false,
-			"description": "Run flye+medaka on long reads then polish results with pilon using short reads, resuting in an hybrid assembly"
+		"fasta": {
+			"type": "string",
+			"format": "file-path",
+			"exists": true,
+			"pattern": "^\\S+\\.(fasta|fa)$",
+			"description": "Path to FASTA file containing assembly contigs"
 		}
 	}
 }
