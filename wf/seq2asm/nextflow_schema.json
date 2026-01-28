@@ -2,13 +2,118 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-		"readsets": {
-      "$ref": "assets/schema/params/readsets.json"
+    "readsets": {
+      "title": "Readsets definition",
+      "type": "object",
+      "oneOf": [
+        {
+          "required": [
+            "csv"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "long_reads"
+                ]
+              },
+              {
+                "required": [
+                  "short_reads"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "not": {
+            "required": [
+              "csv"
+            ]
+          },
+          "anyOf": [
+            {
+              "required": [
+                "long_reads"
+              ]
+            },
+            {
+              "required": [
+                "short_reads"
+              ]
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "csv": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "pattern": "^\\S+\\.(csv)$",
+          "description": "Path to a CSV file containing the readsets."
+        },
+        "long_reads": {
+          "type": "string",
+          "format": "file-path-pattern",
+          "exists": true,
+          "pattern": "^\\S+\\.(bam|fastq\\.gz|fq\\.gz)$",
+          "description": "Path to BAM or FASTQ.GZ files containing ONT reads"
+        },
+        "short_reads": {
+          "type": "string",
+          "format": "file-path-pattern",
+          "exists": true,
+          "pattern": "^\\S+\\.(fastq\\.gz|fq\\.gz)$",
+          "description": "Path to FASTQ.GZ files containing short reads. Pairend-end files are reconized when ending with regex pattern '_(R?[12])(_001)?.(fq|fastq).gz$'"
+        }
+      }
     },
-		"assembler": {
-			"$ref": "assets/schema/params/assembly.json"
-		}
+    "assembly": {
+      "title": "Assembler definition",
+      "type": "object",
+      "properties": {
+        "long_flye_medaka": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run flye+medaka assembler on long reads"
+        },
+        "long_hybracter": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run hybracter assembler on long reads"
+        },
+        "long_unicycler": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run unicycler assembler on long reads"
+        },
+        "short_spades": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run spades on short reads"
+        },
+        "short_unicycler": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run unicycler on short reads"
+        },
+        "hybrid_unicycler": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run unicycler with both long and short reads"
+        },
+        "hybrid_hybracter": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run hybracter with both long and short reads"
+        },
+        "hybrid_flye_medaka_pilon": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run flye+medaka on long reads then polish results with pilon using short reads, resuting in an hybrid assembly"
+        }
+      }
+    }
   }
 }
-
-
