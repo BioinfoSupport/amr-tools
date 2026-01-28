@@ -118,12 +118,14 @@ read_mobtyper_tsv <- function(tsv_file) {
 
 read_orgfinder_tax <- function(tsv_file) {
 	#tsv_file <- "results/samples/r62b17.hdr/orgfinder/tax.tsv"
+	#assembly_acc    org_name        tax_id  species_id      genus_id        family_id       order_id        class_id        phylum_id       species_name    genus_name      family_name     order_name      class_name      phylum_name
 	read_tsv(tsv_file,show_col_types = FALSE,col_types = cols(.default = "c")) |>
 		mutate(species_name = if_else(is.na(species_name),org_name,species_name))
 }
 
 read_orgfinder_tsv <- function(tsv_file) {
 	#tsv_file <- "results/samples/r62b17.hdr/orgfinder/ani.tsv"
+	#query   assembly_acc    ANI     bi_frag query_frag      org_name        tax_id
 	read_tsv(tsv_file,show_col_types = FALSE,col_types = cols(ANI = "n",bi_frag="i",query_frag="i",.default = "c"))
 }
 

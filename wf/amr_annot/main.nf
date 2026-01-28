@@ -250,19 +250,20 @@ workflow {
 		log.info(paramsSummaryLog(workflow))
 
 		// Extract Long_read and Short_read channels from params 
-		def ss = AmrUtils.parse_generic_params(params,{sheet -> samplesheetToList(sheet, "assets/schema_samplesheet.json")})
+		def assemblies = AmrUtils.get_assemblies(params.assemblies,{sheet,schema -> samplesheetToList(sheet, schema)})
 
 		// ------------------------------------------------------------------			
 		// Convert input files formats
 		// ------------------------------------------------------------------
 		// Uncompress .fasta.gz files when needed
-		ss.fa_ch = ss.fa_ch.branch({meta,f -> 
+		assemblies.fasta = assemblies.fasta.branch({meta,f -> 
 			gz: f.name =~ /\.gz$/
 			fa: true
 		})
-		ss.fa_ch = ss.fa_ch.fa.mix(GZIP_DECOMPRESS_FASTA(ss.fa_ch.gz))
+		assemblies.fasta = assemblies.fasta.fa.mix(GZIP_DECOMPRESS_FASTA(assemblies.fasta.gz))
 		
-		AMR_ANNOT(params,ss.fa_ch,ss.fqs_ch,ss.fql_ch)
+		//AMR_ANNOT(params,assemblies.fasta,ss.fqs_ch,ss.fql_ch)
+		AMR_ANNOT(params,assemblies.fasta,Channel.empty(),Channel.empty())
 
 	publish:
 		orgfinder           = AMR_ANNOT.out.orgfinder

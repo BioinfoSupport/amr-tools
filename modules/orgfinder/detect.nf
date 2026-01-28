@@ -26,7 +26,7 @@ process ORGFINDER_DETECT {
 		stub:
 				"""
 				mkdir -p orgfinder
-				touch orgfinder/ani.tsv
+				touch orgfinder/ani.tsv orgfinder/tax.tsv orgfinder/db.tsv
 				export ORG_NAME="xxx"
 				export ORG_ACC="xxx"
 				export ORG_ANI="90"
