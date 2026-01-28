@@ -1,5 +1,5 @@
 
-SUBDIRS := wf/seq_qc wf/seq2asm
+SUBDIRS := wf/seq_qc wf/seq2asm wf/asm_qc
 
 .PHONY: all clean $(SUBDIRS)
 
