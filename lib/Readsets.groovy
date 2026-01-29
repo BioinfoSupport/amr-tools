@@ -35,7 +35,7 @@ class Readsets {
 		}
 	}
 	
-	def flat_csv_channel() {
+	def flat_csv() {
 		def ss = this.meta_ch
 			.join(this.long_reads.ifEmpty(['__sentinel__',null]),failOnDuplicate:true,remainder:true)
 			.join(this.short_reads.ifEmpty(['__sentinel__',null]),failOnDuplicate:true,remainder:true)

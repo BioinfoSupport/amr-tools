@@ -61,7 +61,7 @@ workflow {
 		log.info(paramsSummaryLog(workflow))
 
 		def readsets = new Readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
-		def input_readsets_csv = readsets.flat_csv_channel()
+		def input_readsets_csv = readsets.flat_csv()
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
 		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
