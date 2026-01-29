@@ -61,6 +61,7 @@ workflow {
 		log.info(paramsSummaryLog(workflow))
 
 		def readsets = new Readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
+		def input_readsets_csv = readsets.flat_csv_channel()
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
 		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
@@ -78,19 +79,23 @@ workflow {
 		SEQ_QC(readsets.short_reads,readsets.long_reads)
     
 	publish:
-	  readsets_csv      = readsets.flat_csv_channel()
-		long_nanoplot     = SEQ_QC.out.long_nanoplot
-		short_fastp_json  = SEQ_QC.out.short_fastp_json
-		short_fastp_html  = SEQ_QC.out.short_fastp_html
-		multiqc_html      = SEQ_QC.out.multiqc_html
+	  input_readsets_csv  = input_readsets_csv
+	  filtered_long_reads = readsets.long_reads
+		long_nanoplot       = SEQ_QC.out.long_nanoplot
+		short_fastp_json    = SEQ_QC.out.short_fastp_json
+		short_fastp_html    = SEQ_QC.out.short_fastp_html
+		multiqc_html        = SEQ_QC.out.multiqc_html
 }
 
 output {
-	readsets_csv {
+	input_readsets_csv {
     index {
-    	path 'indexes/seq_qc_readsets.csv'
+    	path 'indexes/seq_qc_input_readsets.csv'
     	header true
     }
+	}
+	filtered_long_reads {
+		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/filtered_long_reads.fastq.gz"}
 	}
 	long_nanoplot {
 		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/long_nanoplot"}
