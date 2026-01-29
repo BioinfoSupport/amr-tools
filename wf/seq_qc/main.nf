@@ -1,5 +1,6 @@
 
 include { SAMTOOLS_FASTQ } from './modules/samtools/fastq'
+include { FQ_SUBSAMPLE   } from './modules/fq_subsample'
 include { NANOPLOT       } from './modules/nanoplot'
 include { FASTP          } from './modules/fastp'
 include { ORGANIZE_FILES } from './modules/organize_files'
@@ -43,7 +44,7 @@ workflow SEQ_QC {
 // ------------------------------------------------------------------
 // Main entry point when running the pipeline from command line
 // ------------------------------------------------------------------
-import AmrUtils
+import Readsets
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 params.readsets = [
@@ -51,6 +52,7 @@ params.readsets = [
 	long_reads  : [],
 	short_reads : []
 ]
+params.limit_long_reads_len = null
 
 workflow {
 	main:
@@ -58,7 +60,7 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-		def readsets = AmrUtils.get_readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
+		def readsets = new Readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
 		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
@@ -68,13 +70,15 @@ workflow {
 		readsets.long_reads = readsets.long_reads.fq.mix(SAMTOOLS_FASTQ(readsets.long_reads.bam))
 
 		// Reduce FASTQ size if needed
-		//lr_ch = FQ_SUBSAMPLE(readsets.lr_ch)
-
+		if (params.limit_long_reads_len) {
+			readsets.long_reads = FQ_SUBSAMPLE(readsets.long_reads,params.limit_long_reads_len)	
+		}
+		
 		// Reads Quality Controls, get a multiQC
 		SEQ_QC(readsets.short_reads,readsets.long_reads)
     
 	publish:
-	  readsets_csv      = readsets.csv
+	  readsets_csv      = readsets.flat_csv_channel()
 		long_nanoplot     = SEQ_QC.out.long_nanoplot
 		short_fastp_json  = SEQ_QC.out.short_fastp_json
 		short_fastp_html  = SEQ_QC.out.short_fastp_html

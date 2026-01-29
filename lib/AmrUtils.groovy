@@ -12,11 +12,13 @@ class AmrUtils {
 		]
 		
 		if (opts.csv) {
+				// Directly load the sheet from CSV file
 				readsets.ss = Channel.fromList(samplesheetToList(opts.csv,"assets/schema/sheets/readsets.json"))
 					.map({it[0].sample_id = it[0].sample_id?:it[0].readset_id;it})
 				readsets.long_reads  = readsets.ss.map({[it[0],it[1]]}).filter({it[1]})
 				readsets.short_reads = readsets.ss.map({[it[0],[it[2],it[3]]]}).filter({it[1].findAll({it})})
 		} else {
+			// Generate the sheet from parameters
 	  	if (opts.long_reads) {
 	  		readsets.long_reads = Channel.fromPath(opts.long_reads)
 	  			.map({
@@ -38,6 +40,7 @@ class AmrUtils {
 				.filter({it[0]!='__sentinel__'})
 		}
 		
+		// Generate CSV from the sheet
 		readsets.csv = readsets.ss.map({[
 			readset_id: it[0].readset_id,
 			sample_id:  it[0].sample_id,
