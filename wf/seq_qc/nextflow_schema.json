@@ -4,11 +4,13 @@
   "properties": {
     "limit_long_reads_len": {
       "type": "integer",
-      "description": "Limit the number input reads to this maximum total length (in bp)"
+      "description": "Limit the number input reads to this maximum total length (in bp)",
+      "default": -1
     },
     "limit_short_reads_len": {
       "type": "integer",
-      "description": "Limit the number input reads to this maximum total length (in bp)"
+      "description": "Limit the number input reads to this maximum total length (in bp)",
+      "default": -1
     },
     "readsets": {
       "title": "Readsets definition",
