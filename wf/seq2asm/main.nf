@@ -25,41 +25,59 @@ workflow SEQ2ASM {
 		})
 		fql_ch = fql_ch.fq.mix(SAMTOOLS_FASTQ(fql_ch.bam))
 
+		
+		def assemblies_fasta = Channel.empty()
+		def assemblies_dir = Channel.empty()
+		
 		// Short reads only assemblies
-		SHORT_SPADES(fqs_ch.filter({opts.short_spades}),Channel.empty())
-		SHORT_UNICYCLER(fqs_ch.filter({opts.short_unicycler}),Channel.empty())
+		if (opts.name=="short_spades") {
+			SHORT_SPADES(fqs_ch,Channel.empty())
+			assemblies_fasta = assemblies_fasta.mix(SHORT_SPADES.out.fasta.map({meta,x -> [meta+[assembly_name:'short_spades'],x]}))
+			assemblies_dir = assemblies_dir.mix(SHORT_SPADES.out.dir.map({meta,x -> [meta+[assembly_name:'short_spades'],x]}))
+		}
+		if (opts.name=="short_unicycler") {
+			SHORT_UNICYCLER(fqs_ch,Channel.empty())
+			assemblies_fasta = assemblies_fasta.mix(SHORT_UNICYCLER.out.fasta.map({meta,x -> [meta+[assembly_name:'short_unicycler'],x]}))
+			assemblies_dir = assemblies_dir.mix(SHORT_UNICYCLER.out.dir.map({meta,x -> [meta+[assembly_name:'short_unicycler'],x]}))
+		}
 		
 		// Long reads only assemblies
-		LONG_HYBRACTER(Channel.empty(),fql_ch.filter({opts.long_hybracter}))
-		LONG_UNICYCLER(Channel.empty(),fql_ch.filter({opts.long_unicycler}))
-		LONG_FLYE_MEDAKA(Channel.empty(),fql_ch.filter({opts.long_flye_medaka}))
+		if (opts.name=="long_hybracter") {
+			LONG_HYBRACTER(Channel.empty(),fql_ch)
+			assemblies_fasta = assemblies_fasta.mix(LONG_HYBRACTER.out.fasta.map({meta,x -> [meta+[assembly_name:'long_hybracter'],x]}))
+			assemblies_dir = assemblies_dir.mix(LONG_HYBRACTER.out.dir.map({meta,x -> [meta+[assembly_name:'long_hybracter'],x]}))
+		}
+		if (opts.name=="long_unicycler") {
+			LONG_UNICYCLER(Channel.empty(),fql_ch)
+			assemblies_fasta = assemblies_fasta.mix(LONG_UNICYCLER.out.fasta.map({meta,x -> [meta+[assembly_name:'long_unicycler'],x]}))
+			assemblies_dir = assemblies_dir.mix(LONG_UNICYCLER.out.dir.map({meta,x -> [meta+[assembly_name:'long_unicycler'],x]}))
+		}
+		if (opts.name=="long_flye_medaka") {
+			LONG_FLYE_MEDAKA(Channel.empty(),fql_ch)
+			assemblies_fasta = assemblies_fasta.mix(LONG_FLYE_MEDAKA.out.fasta.map({meta,x -> [meta+[assembly_name:'long_flye_medaka'],x]}))
+			assemblies_dir = assemblies_dir.mix(LONG_FLYE_MEDAKA.out.dir.map({meta,x -> [meta+[assembly_name:'long_flye_medaka'],x]}))
+		}
 
 		// Hybrid assemblies
-		HYBRID_HYBRACTER(fqs_ch.filter({opts.hybrid_hybracter}),fql_ch.filter({opts.hybrid_hybracter}))
-		HYBRID_UNICYCLER(fqs_ch.filter({opts.hybrid_unicycler}),fql_ch.filter({opts.hybrid_unicycler}))
-		HYBRID_FLYE_MEDAKA_PILON(fqs_ch.filter({opts.hybrid_flye_medaka_pilon}),fql_ch.filter({opts.hybrid_flye_medaka_pilon}))
+		if (opts.name=="hybrid_hybracter") {
+			HYBRID_HYBRACTER(fqs_ch,fql_ch)
+			assemblies_fasta = assemblies_fasta.mix(HYBRID_HYBRACTER.out.fasta.map({meta,x -> [meta+[assembly_name:'hybrid_hybracter'],x]}))
+			assemblies_dir = assemblies_dir.mix(HYBRID_HYBRACTER.out.dir.map({meta,x -> [meta+[assembly_name:'hybrid_hybracter'],x]}))
+		}
+		if (opts.name=="hybrid_unicycler") {
+			HYBRID_UNICYCLER(fqs_ch,fql_ch)
+			assemblies_fasta = assemblies_fasta.mix(HYBRID_UNICYCLER.out.fasta.map({meta,x -> [meta+[assembly_name:'hybrid_unicycler'],x]}))
+			assemblies_dir = assemblies_dir.mix(HYBRID_UNICYCLER.out.dir.map({meta,x -> [meta+[assembly_name:'hybrid_unicycler'],x]}))
+		}
+		if (opts.name=="hybrid_flye_medaka_pilon") {
+			HYBRID_FLYE_MEDAKA_PILON(fqs_ch,fql_ch)
+			assemblies_fasta = assemblies_fasta.mix(HYBRID_FLYE_MEDAKA_PILON.out.fasta.map({meta,x -> [meta+[assembly_name:'hybrid_flye_medaka_pilon'],x]}))
+			assemblies_dir = assemblies_dir.mix(HYBRID_FLYE_MEDAKA_PILON.out.dir.map({meta,x -> [meta+[assembly_name:'hybrid_flye_medaka_pilon'],x]}))
+		}
 		
 	emit:
-		fasta = Channel.empty().mix(
-			SHORT_SPADES.out.fasta.map({meta,x -> [meta+[assembly_name:'short_spades'],x]}),
-			SHORT_UNICYCLER.out.fasta.map({meta,x -> [meta+[assembly_name:'short_unicycler'],x]}),
-			LONG_FLYE_MEDAKA.out.fasta.map({meta,x -> [meta+[assembly_name:'long_flye_medaka'],x]}),
-			LONG_UNICYCLER.out.fasta.map({meta,x -> [meta+[assembly_name:'long_unicycler'],x]}),
-			LONG_HYBRACTER.out.fasta.map({meta,x -> [meta+[assembly_name:'long_hybracter'],x]}),
-		  HYBRID_UNICYCLER.out.fasta.map({meta,x -> [meta+[assembly_name:'hybrid_unicycler'],x]}),
-		  HYBRID_HYBRACTER.out.fasta.map({meta,x -> [meta+[assembly_name:'hybrid_hybracter'],x]}),
-		  HYBRID_FLYE_MEDAKA_PILON.out.fasta.map({meta,x -> [meta+[assembly_name:'hybrid_flye_medaka_pilon'],x]})
-		)
-		dir = Channel.empty().mix(
-			SHORT_SPADES.out.dir.map({meta,x -> [meta+[assembly_name:'short_spades'],x]}),
-			SHORT_UNICYCLER.out.dir.map({meta,x -> [meta+[assembly_name:'short_unicycler'],x]}),
-			LONG_FLYE_MEDAKA.out.dir.map({meta,x -> [meta+[assembly_name:'long_flye_medaka'],x]}),
-			LONG_UNICYCLER.out.dir.map({meta,x -> [meta+[assembly_name:'long_unicycler'],x]}),
-			LONG_HYBRACTER.out.dir.map({meta,x -> [meta+[assembly_name:'long_hybracter'],x]}),
-		  HYBRID_UNICYCLER.out.dir.map({meta,x -> [meta+[assembly_name:'hybrid_unicycler'],x]}),
-		  HYBRID_HYBRACTER.out.dir.map({meta,x -> [meta+[assembly_name:'hybrid_hybracter'],x]}),
-		  HYBRID_FLYE_MEDAKA_PILON.out.dir.map({meta,x -> [meta+[assembly_name:'hybrid_flye_medaka_pilon'],x]})
-		)
+		fasta = assemblies_fasta
+		dir = assemblies_dir
 }
 
 
@@ -78,19 +96,12 @@ params.readsets = [
 ]
 
 params.assembler = [
-	long_unicycler           : false,
-	long_hybracter           : false,
-	long_flye_medaka         : false,
-	short_spades             : false,
-	short_unicycler          : false,
-	hybrid_unicycler         : false,
-	hybrid_hybracter         : false,
-	hybrid_flye_medaka_pilon : false
+	name: "long_flye_medaka",
+	args: ""
 ]
 
 workflow {
 	main:
-		
 		// Validate parameters and print summary of supplied ones
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
