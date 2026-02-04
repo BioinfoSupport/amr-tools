@@ -10,9 +10,22 @@ include { MULTIQC        } from './modules/multiqc'
 
 workflow SEQ_QC {
 	take:
+		opts
 		fqs_ch    // channel: [ val(meta), path(short_reads) ]	
 		fql_ch    // channel: [ val(meta), path(long_reads) ]
 	main:
+		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
+		fql_ch = fql_ch.branch({meta,f -> 
+			bam: f.name =~ /\.(bam|cram)$/
+			fq: true
+		})
+		fql_ch = fql_ch.fq.mix(SAMTOOLS_FASTQ(fql_ch.bam))
+
+		// Reduce FASTQ size if needed
+		if (opts.limit_long_reads_len) {
+			fql_ch = FQ_SUBSAMPLE(fql_ch,params.limit_long_reads_len)
+		}
+
 		// Run nanoplot once on each FASTQ, and then expand to inputs sharing the same FASTQ
 		NANOPLOT(fql_ch)
 
@@ -62,21 +75,7 @@ workflow {
 
 		def readsets = new Readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
 		def input_readsets_csv = readsets.flat_csv()
-
-		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
-		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
-			bam: f.name =~ /\.(bam|cram)$/
-			fq: true
-		})
-		readsets.long_reads = readsets.long_reads.fq.mix(SAMTOOLS_FASTQ(readsets.long_reads.bam))
-
-		// Reduce FASTQ size if needed
-		if (params.limit_long_reads_len) {
-			readsets.long_reads = FQ_SUBSAMPLE(readsets.long_reads,params.limit_long_reads_len)	
-		}
-		
-		// Reads Quality Controls, get a multiQC
-		SEQ_QC(readsets.short_reads,readsets.long_reads)
+		SEQ_QC(params,readsets.short_reads,readsets.long_reads)
     
 	publish:
 	  input_readsets_csv  = input_readsets_csv
