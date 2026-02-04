@@ -44,6 +44,7 @@ workflow SEQ_QC {
 		)
 		MULTIQC(ORGANIZE_FILES.out,Channel.value(file("${moduleDir}/assets/multiqc_config.yml")))
 	emit:
+	  long_filtered     = fql_ch
 		long_nanoplot     = NANOPLOT.out.nanoplot
 		long_nanostat     = NANOPLOT.out.nanostat
 		short_fastp_json  = FASTP.out.json
@@ -79,7 +80,7 @@ workflow {
     
 	publish:
 	  input_readsets_csv  = input_readsets_csv
-	  filtered_long_reads = readsets.long_reads
+	  filtered_long_reads = SEQ_QC.out.long_filtered
 		long_nanoplot       = SEQ_QC.out.long_nanoplot
 		short_fastp_json    = SEQ_QC.out.short_fastp_json
 		short_fastp_html    = SEQ_QC.out.short_fastp_html
