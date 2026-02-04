@@ -1,10 +1,11 @@
 
-include { SAMTOOLS_FASTQ } from './modules/samtools/fastq'
-include { FQ_SUBSAMPLE   } from './modules/fq_subsample'
-include { NANOPLOT       } from './modules/nanoplot'
-include { FASTP          } from './modules/fastp'
-include { ORGANIZE_FILES } from './modules/organize_files'
-include { MULTIQC        } from './modules/multiqc'
+include { SAMTOOLS_FASTQ     } from './modules/samtools/fastq'
+include { FQ_SUBSAMPLE as FQ_SUBSAMPLE_LONG  } from './modules/fq_subsample'
+include { FQ_SUBSAMPLE as FQ_SUBSAMPLE_SHORT } from './modules/fq_subsample'
+include { NANOPLOT           } from './modules/nanoplot'
+include { FASTP              } from './modules/fastp'
+include { ORGANIZE_FILES     } from './modules/organize_files'
+include { MULTIQC            } from './modules/multiqc'
 
 
 
@@ -22,18 +23,14 @@ workflow SEQ_QC {
 		fql_ch = fql_ch.fq.mix(SAMTOOLS_FASTQ(fql_ch.bam))
 
 		// Reduce FASTQ size if needed
-		if (opts.limit_long_reads_len) {
-			fql_ch = FQ_SUBSAMPLE(fql_ch,params.limit_long_reads_len)
-		}
-		if (opts.limit_short_reads_len) {
-			fqs_ch = FQ_SUBSAMPLE(fqs_ch,params.limit_short_reads_len)
-		}
-		
+		fql_ch = FQ_SUBSAMPLE_LONG(fql_ch,params.limit_long_reads_len)
+		fqs_ch = FQ_SUBSAMPLE_SHORT(fqs_ch,params.limit_short_reads_len)
+
 		// Run nanoplot once on each FASTQ, and then expand to inputs sharing the same FASTQ
 		NANOPLOT(fql_ch)
 
 		// Run fastp once on each FASTQ-pair, and then expand to inputs sharing the same FASTQ
-		FASTP(fqs_ch)
+		FASTP(fqs_ch.view())
 
 		// MultiQC
 		ORGANIZE_FILES(
@@ -70,8 +67,8 @@ params.readsets = [
 	long_reads  : [],
 	short_reads : []
 ]
-params.limit_long_reads_len  = null
-params.limit_short_reads_len = null
+params.limit_long_reads_len  = -1
+params.limit_short_reads_len = -1
 
 workflow {
 	main:
@@ -87,11 +84,12 @@ workflow {
 	publish:
 	  input_readsets_csv    = readsets.flat_csv()
 	  filtered_readsets_csv = filtered_readsets.flat_csv()
-	  filtered_long_reads = SEQ_QC.out.long_filtered
-		long_nanoplot       = SEQ_QC.out.long_nanoplot
-		short_fastp_json    = SEQ_QC.out.short_fastp_json
-		short_fastp_html    = SEQ_QC.out.short_fastp_html
-		multiqc_html        = SEQ_QC.out.multiqc_html
+	  filtered_long_reads   = SEQ_QC.out.long_filtered
+	  filtered_short_reads  = SEQ_QC.out.short_filtered
+		long_nanoplot         = SEQ_QC.out.long_nanoplot
+		short_fastp_json      = SEQ_QC.out.short_fastp_json
+		short_fastp_html      = SEQ_QC.out.short_fastp_html
+		multiqc_html          = SEQ_QC.out.multiqc_html
 }
 
 output {
@@ -111,7 +109,7 @@ output {
 		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/filtered_long_reads.fastq.gz"}
 	}
 	filtered_short_reads {
-		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/filtered_short_reads.fastq.gz"}
+		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/filtered_short_reads/"}
 	}	
 	long_nanoplot {
 		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/long_nanoplot"}
