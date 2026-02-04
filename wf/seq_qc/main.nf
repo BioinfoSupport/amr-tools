@@ -25,7 +25,10 @@ workflow SEQ_QC {
 		if (opts.limit_long_reads_len) {
 			fql_ch = FQ_SUBSAMPLE(fql_ch,params.limit_long_reads_len)
 		}
-
+		if (opts.limit_short_reads_len) {
+			fqs_ch = FQ_SUBSAMPLE(fqs_ch,params.limit_short_reads_len)
+		}
+		
 		// Run nanoplot once on each FASTQ, and then expand to inputs sharing the same FASTQ
 		NANOPLOT(fql_ch)
 
@@ -47,6 +50,7 @@ workflow SEQ_QC {
 	  long_filtered     = fql_ch
 		long_nanoplot     = NANOPLOT.out.nanoplot
 		long_nanostat     = NANOPLOT.out.nanostat
+		short_filtered    = fqs_ch
 		short_fastp_json  = FASTP.out.json
 		short_fastp_html  = FASTP.out.html
 		multiqc_html      = MULTIQC.out.html.map({m,x -> x})
@@ -66,7 +70,8 @@ params.readsets = [
 	long_reads  : [],
 	short_reads : []
 ]
-params.limit_long_reads_len = null
+params.limit_long_reads_len  = null
+params.limit_short_reads_len = null
 
 workflow {
 	main:
@@ -74,11 +79,16 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-		def readsets = new Readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
+		def readsets = Readsets.fromParams(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
 		SEQ_QC(params,readsets.short_reads,readsets.long_reads)
     
+  	
+  	def filtered_readsets = Readsets.fromChannels(SEQ_QC.out.short_filtered,SEQ_QC.out.long_filtered)
+  	
+    
 	publish:
-	  input_readsets_csv  = readsets.flat_csv()
+	  input_readsets_csv    = readsets.flat_csv()
+	  filtered_readsets_csv = filtered_readsets.flat_csv()
 	  filtered_long_reads = SEQ_QC.out.long_filtered
 		long_nanoplot       = SEQ_QC.out.long_nanoplot
 		short_fastp_json    = SEQ_QC.out.short_fastp_json
@@ -90,6 +100,12 @@ output {
 	input_readsets_csv {
     index {
     	path 'indexes/seq_qc_input_readsets.csv'
+    	header true
+    }
+	}
+	filtered_readsets_csv {
+    index {
+    	path 'indexes/seq_qc_filtered_readsets.csv'
     	header true
     }
 	}

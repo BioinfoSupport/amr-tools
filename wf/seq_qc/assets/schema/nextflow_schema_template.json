@@ -5,7 +5,11 @@
 		"limit_long_reads_len": {
 			"type": "integer",
 			"description": "Limit the number input reads to this maximum total length (in bp)"
-		}
+		},
+		"limit_short_reads_len": {
+			"type": "integer",
+			"description": "Limit the number input reads to this maximum total length (in bp)"
+		}		
   }
 }
 
