@@ -1,7 +1,7 @@
 
 process FQ_SUBSAMPLE {
     container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
-    memory '6 GB'
+    memory '2 GB'
     cpus 4
     time '30 min'
     input:
@@ -12,7 +12,7 @@ process FQ_SUBSAMPLE {
     script:
 				"""
 				gzip -dc reads.fastq.gz \\
-				| awk 'NR%4==2{bp+=length(\$0)} {print} ((bp>=${bp_limit}) && (NR%4==0)){exit}' \\
+				| awk 'NR%4==2{bp+=length(\$0)} {print} ((bp>=${bp_limit}) && (NR%4==0)){exit 0}' \\
 				| bgzip -@ ${task.cpus} \\
 				> subsampled_reads.fastq.gz
 				"""
