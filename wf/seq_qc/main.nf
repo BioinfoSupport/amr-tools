@@ -67,8 +67,8 @@ params.readsets = [
 	long_reads  : [],
 	short_reads : []
 ]
-params.limit_long_reads_len  = -1
-params.limit_short_reads_len = -1
+params.limit_long_reads_len  = 1000000000
+params.limit_short_reads_len = 1000000000
 
 workflow {
 	main:
