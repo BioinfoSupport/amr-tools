@@ -28,8 +28,8 @@ class Readsets {
 			def ss = Channel.fromList(samplesheetToList(csv_path,"assets/schema/sheets/readsets.json"))
 				.map({it[0].sample_id = it[0].sample_id?:it[0].readset_id;it})
 			x.meta_ch     = ss.map({it[0]})
-			x.short_reads = ss.map({[it[0],it[1]]}).filter({it[1]})
-			x.long_reads  = ss.map({[it[0],[it[2],it[3]]]}).filter({it[1].findAll({it})})
+			x.short_reads = ss.map({[it[0],[it[2],it[3]]]}).filter({it[1].findAll({it})})
+			x.long_reads  = ss.map({[it[0],it[1]]}).filter({it[1]})
 			return x
 	}
 

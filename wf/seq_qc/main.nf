@@ -81,11 +81,9 @@ workflow {
 
 		def readsets = Readsets.fromParams(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
 		SEQ_QC(params,readsets.short_reads,readsets.long_reads)
-    
-  	
+		
   	def filtered_readsets = Readsets.fromChannels(SEQ_QC.out.short_filtered,SEQ_QC.out.long_filtered)
-  	
-    
+
 	publish:
 	  input_readsets_csv    = readsets.flat_csv()
 	  filtered_readsets_csv = filtered_readsets.flat_csv()
@@ -112,6 +110,9 @@ output {
 	filtered_long_reads {
 		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/filtered_long_reads.fastq.gz"}
 	}
+	filtered_short_reads {
+		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/filtered_short_reads.fastq.gz"}
+	}	
 	long_nanoplot {
 		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/long_nanoplot"}
 	}
