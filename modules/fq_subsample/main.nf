@@ -11,6 +11,7 @@ process FQ_SUBSAMPLE {
     		tuple val(meta), path("subsampled_reads.fastq.gz")
     script:
 				"""
+				set +o pipefail
 				gzip -dc reads.fastq.gz \\
 				| awk 'NR%4==2{bp+=length(\$0)} {print} ((bp>=${bp_limit}) && (NR%4==0)){exit 0}' \\
 				| bgzip -@ ${task.cpus} \\
