@@ -18,6 +18,13 @@ workflow SEQ2ASM {
 		fql_ch    // channel: [ val(meta), path(long_reads) ]
 	main:
 
+		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
+		fql_ch = fql_ch.branch({meta,f -> 
+			bam: f.name =~ /\.(bam|cram)$/
+			fq: true
+		})
+		fql_ch = fql_ch.fq.mix(SAMTOOLS_FASTQ(fql_ch.bam))
+
 		// Short reads only assemblies
 		SHORT_SPADES(fqs_ch.filter({opts.short_spades}),Channel.empty())
 		SHORT_UNICYCLER(fqs_ch.filter({opts.short_unicycler}),Channel.empty())
@@ -91,13 +98,6 @@ workflow {
 		// Extract Long_read and Short_read channels from params 
 		def readsets = AmrUtils.get_readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
 		
-		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
-		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
-			bam: f.name =~ /\.(bam|cram)$/
-			fq: true
-		})
-		readsets.long_reads = readsets.long_reads.fq.mix(SAMTOOLS_FASTQ(readsets.long_reads.bam))
-
 		// Run assemblers
 		SEQ2ASM(params.assembler,readsets.short_reads,readsets.long_reads)
 
