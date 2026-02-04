@@ -1,7 +1,7 @@
 
 process FQ_SUBSAMPLE {
     container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
-    memory '2 GB'
+    memory '6 GB'
     cpus 4
     time '30 min'
     input:
