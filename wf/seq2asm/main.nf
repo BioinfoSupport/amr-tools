@@ -68,7 +68,7 @@ workflow SEQ2ASM {
 // ------------------------------------------------------------------
 // Main entry point when running the pipeline from command line
 // ------------------------------------------------------------------
-import AmrUtils
+import Readsets
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 params.readsets = [
@@ -95,8 +95,8 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-		// Extract Long_read and Short_read channels from params 
-		def readsets = AmrUtils.get_readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
+		// Extract Long_read and Short_read channels from params
+		def readsets = Readsets.fromParams(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
 		
 		// Run assemblers
 		SEQ2ASM(params.assembler,readsets.short_reads,readsets.long_reads)
@@ -107,13 +107,13 @@ workflow {
 
 	publish:
 		assemblies   = assemblies
-		readsets_csv = readsets.csv
+		readsets_csv = readsets.flat_csv()
 }
 
 output {
 	readsets_csv {
     index {
-    	path 'indexes/seq2asm_readsets.csv'
+    	path 'indexes/seq2asm_input_readsets.csv'
     	header true
     }
 	}
