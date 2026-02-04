@@ -1,7 +1,7 @@
 
 process SAMTOOLS_FASTQ {
     container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
-    memory '2 GB'
+    memory '6 GB'
     cpus 1
     time '15 min'
     input:
