@@ -75,11 +75,10 @@ workflow {
 		log.info(paramsSummaryLog(workflow))
 
 		def readsets = new Readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
-		def input_readsets_csv = readsets.flat_csv()
 		SEQ_QC(params,readsets.short_reads,readsets.long_reads)
     
 	publish:
-	  input_readsets_csv  = input_readsets_csv
+	  input_readsets_csv  = readsets.flat_csv()
 	  filtered_long_reads = SEQ_QC.out.long_filtered
 		long_nanoplot       = SEQ_QC.out.long_nanoplot
 		short_fastp_json    = SEQ_QC.out.short_fastp_json
