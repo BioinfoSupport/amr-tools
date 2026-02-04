@@ -35,9 +35,9 @@ workflow SEQ_QC {
 		// MultiQC
 		ORGANIZE_FILES(
 			Channel.empty().mix(
-				NANOPLOT.out.nanostat.map({meta,file -> [file,"${meta.sample_id}.nanostat"]}),
-				//FASTQC.out.zip.map({meta,file -> [file,"${meta.sample_id}_fastqc.zip"]}),
-				FASTP.out.json.map({meta,file -> [file,"${meta.sample_id}.fastp.json"]})
+				NANOPLOT.out.nanostat.map({meta,file -> [file,"${meta.sample_id}_${meta.readset_id}.nanostat"]}),
+				//FASTQC.out.zip.map({meta,file -> [file,"${meta.sample_id}_${meta.readset_id}_fastqc.zip"]}),
+				FASTP.out.json.map({meta,file -> [file,"${meta.sample_id}_${meta.readset_id}.fastp.json"]})
 			)
 			.collect({[it]})
 			.map({["multiqc.html",it]})
@@ -95,16 +95,16 @@ output {
     }
 	}
 	filtered_long_reads {
-		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/filtered_long_reads.fastq.gz"}
+		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/filtered_long_reads.fastq.gz"}
 	}
 	long_nanoplot {
-		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/long_nanoplot"}
+		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/long_nanoplot"}
 	}
 	short_fastp_json {
-		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/short_fastp.json"}
+		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/short_fastp.json"}
 	}	
 	short_fastp_html {
-		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/short_fastp.html"}
+		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/short_fastp.html"}
 	}
 	multiqc_html {
 		path { it >> "./seq_qc.html" }
