@@ -2,26 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-  	
-  	"assembler": {
-  		"type": "object",
-  		"title": "Assembler definition",
-			"properties": {
-				"name": {
-					"type": "string",
-					"default": "long_flye_medaka",
-					"enum": ["long_flye_medaka","long_hybracter","long_unicycler","short_spades","short_unicycler","hybrid_unicycler","hybrid_hybracter","hybrid_flye_medaka_pilon"]
-				},
-				"args": {
-					"type": "string",
-					"default": ""
-				}
-			}
-  	},
-  	
-  	"readsets": {
-  	}
-  	
+  	"assembler": {},
+  	"readsets": {}
   }
 }
 

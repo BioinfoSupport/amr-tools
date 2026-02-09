@@ -6,8 +6,15 @@ workflow UNICYCLER {
 	take:
 		fqs_ch
 	  fql_ch
+	  args
 	main:
-		UNICYCLER_RUN(fqs_ch.join(fql_ch,remainder:true).map({meta,fqs,fql -> [meta,fqs?:[],fql?:[]]})) | UNICYCLER_ADAPT
+		UNICYCLER_RUN(
+			fqs_ch
+			.join(fql_ch,remainder:true)
+			.map({meta,fqs,fql -> [meta,fqs?:[],fql?:[]]})
+			.combine(Channel.from(args?:""))
+		)
+		| UNICYCLER_ADAPT
 	emit:
 		fasta = UNICYCLER_ADAPT.out.fasta
 		dir   = UNICYCLER_RUN.out

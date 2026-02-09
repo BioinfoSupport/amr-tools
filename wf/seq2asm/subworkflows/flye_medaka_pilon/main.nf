@@ -16,12 +16,12 @@ workflow FLYE_MEDAKA_PILON {
 		args
 	main:
 		fql_ch
-		.combine(args.map({it.flye?:""})) 
+		.combine(Channel.from(args.flye?:""))
 		| FLYE
 		| FLYE_ADAPT
 		
 		FLYE_ADAPT.out.fasta.join(fql_ch)
-		.combine(args.map({it.medaka?:""})) 
+		.combine(Channel.from(args.medaka?:"")) 
 		| MEDAKA_CONSENSUS 
 		| MEDAKA_ADAPT
 		

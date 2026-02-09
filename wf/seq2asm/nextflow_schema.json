@@ -3,13 +3,14 @@
   "type": "object",
   "properties": {
     "assembler": {
+      "title": "Assembler schema",
       "type": "object",
-      "title": "Assembler definition",
       "properties": {
         "name": {
           "type": "string",
           "default": "long_flye_medaka",
           "enum": [
+            "long_flye",
             "long_flye_medaka",
             "long_hybracter",
             "long_unicycler",
@@ -21,8 +22,21 @@
           ]
         },
         "args": {
-          "type": "string",
-          "default": ""
+          "type": "object",
+          "properties": {
+            "flye": {
+              "type": "string"
+            },
+            "medaka": {
+              "type": "string"
+            },
+            "unicycler": {
+              "type": "string"
+            },
+            "hybracter": {
+              "type": "string"
+            }
+          }
         }
       }
     },

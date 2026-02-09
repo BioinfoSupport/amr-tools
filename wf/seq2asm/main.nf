@@ -1,7 +1,7 @@
 
 include { SAMTOOLS_FASTQ                                 } from './modules/samtools/fastq'
-//include { UNICYCLER as LONG_UNICYCLER                    } from './subworkflows/unicycler'
-//include { UNICYCLER as SHORT_UNICYCLER                   } from './subworkflows/unicycler'
+include { UNICYCLER as LONG_UNICYCLER                    } from './subworkflows/unicycler'
+include { UNICYCLER as SHORT_UNICYCLER                   } from './subworkflows/unicycler'
 //include { UNICYCLER as HYBRID_UNICYCLER                  } from './subworkflows/unicycler'
 //include { HYBRACTER as LONG_HYBRACTER                    } from './subworkflows/hybracter'
 //include { HYBRACTER as HYBRID_HYBRACTER                  } from './subworkflows/hybracter'
@@ -29,50 +29,54 @@ workflow SEQ2ASM {
 		def assemblies_fasta = Channel.empty()
 		def assemblies_dir = Channel.empty()
 
-/*		
+/*
 		// Short reads only assemblies
 		if (assembler.name=="short_spades") {
-			SHORT_SPADES(fqs_ch,Channel.empty())
+			SHORT_SPADES(fqs_ch,Channel.empty(),assembler.args)
 			assemblies_fasta = assemblies_fasta.mix(SHORT_SPADES.out.fasta.map({meta,x -> [meta+[assembly_name:'short_spades'],x]}))
 			assemblies_dir = assemblies_dir.mix(SHORT_SPADES.out.dir.map({meta,x -> [meta+[assembly_name:'short_spades'],x]}))
 		}
+*/
 		if (assembler.name=="short_unicycler") {
-			SHORT_UNICYCLER(fqs_ch,Channel.empty())
+			SHORT_UNICYCLER(fqs_ch,Channel.empty(),assembler.args.unicycler?:"")
 			assemblies_fasta = assemblies_fasta.mix(SHORT_UNICYCLER.out.fasta.map({meta,x -> [meta+[assembly_name:'short_unicycler'],x]}))
 			assemblies_dir = assemblies_dir.mix(SHORT_UNICYCLER.out.dir.map({meta,x -> [meta+[assembly_name:'short_unicycler'],x]}))
 		}
-		
+/*
 		// Long reads only assemblies
 		if (assembler.name=="long_hybracter") {
-			LONG_HYBRACTER(Channel.empty(),fql_ch)
+			LONG_HYBRACTER(Channel.empty(),fql_ch,assembler.args)
 			assemblies_fasta = assemblies_fasta.mix(LONG_HYBRACTER.out.fasta.map({meta,x -> [meta+[assembly_name:'long_hybracter'],x]}))
 			assemblies_dir = assemblies_dir.mix(LONG_HYBRACTER.out.dir.map({meta,x -> [meta+[assembly_name:'long_hybracter'],x]}))
 		}
+*/			
 		if (assembler.name=="long_unicycler") {
-			LONG_UNICYCLER(Channel.empty(),fql_ch)
+			LONG_UNICYCLER(Channel.empty(),fql_ch,assembler.args.unicycler?:"")
 			assemblies_fasta = assemblies_fasta.mix(LONG_UNICYCLER.out.fasta.map({meta,x -> [meta+[assembly_name:'long_unicycler'],x]}))
 			assemblies_dir = assemblies_dir.mix(LONG_UNICYCLER.out.dir.map({meta,x -> [meta+[assembly_name:'long_unicycler'],x]}))
 		}
-*/		
+	
 		if (assembler.name=="long_flye_medaka") {
-			LONG_FLYE_MEDAKA(Channel.empty(),fql_ch,Channel.from(assembler.args))
+			LONG_FLYE_MEDAKA(Channel.empty(),fql_ch,assembler.args)
 			assemblies_fasta = assemblies_fasta.mix(LONG_FLYE_MEDAKA.out.fasta.map({meta,x -> [meta+[assembly_name:'long_flye_medaka'],x]}))
 			assemblies_dir = assemblies_dir.mix(LONG_FLYE_MEDAKA.out.dir.map({meta,x -> [meta+[assembly_name:'long_flye_medaka'],x]}))
 		}
 /*
 		// Hybrid assemblies
 		if (assembler.name=="hybrid_hybracter") {
-			HYBRID_HYBRACTER(fqs_ch,fql_ch)
+			HYBRID_HYBRACTER(fqs_ch,fql_ch,assembler.args)
 			assemblies_fasta = assemblies_fasta.mix(HYBRID_HYBRACTER.out.fasta.map({meta,x -> [meta+[assembly_name:'hybrid_hybracter'],x]}))
 			assemblies_dir = assemblies_dir.mix(HYBRID_HYBRACTER.out.dir.map({meta,x -> [meta+[assembly_name:'hybrid_hybracter'],x]}))
 		}
+*/
 		if (assembler.name=="hybrid_unicycler") {
-			HYBRID_UNICYCLER(fqs_ch,fql_ch)
+			HYBRID_UNICYCLER(fqs_ch,fql_ch,assembler.args.unicycler?:"")
 			assemblies_fasta = assemblies_fasta.mix(HYBRID_UNICYCLER.out.fasta.map({meta,x -> [meta+[assembly_name:'hybrid_unicycler'],x]}))
 			assemblies_dir = assemblies_dir.mix(HYBRID_UNICYCLER.out.dir.map({meta,x -> [meta+[assembly_name:'hybrid_unicycler'],x]}))
 		}
+/*
 		if (assembler.name=="hybrid_flye_medaka_pilon") {
-			HYBRID_FLYE_MEDAKA_PILON(fqs_ch,fql_ch)
+			HYBRID_FLYE_MEDAKA_PILON(fqs_ch,fql_ch,assembler.args)
 			assemblies_fasta = assemblies_fasta.mix(HYBRID_FLYE_MEDAKA_PILON.out.fasta.map({meta,x -> [meta+[assembly_name:'hybrid_flye_medaka_pilon'],x]}))
 			assemblies_dir = assemblies_dir.mix(HYBRID_FLYE_MEDAKA_PILON.out.dir.map({meta,x -> [meta+[assembly_name:'hybrid_flye_medaka_pilon'],x]}))
 		}

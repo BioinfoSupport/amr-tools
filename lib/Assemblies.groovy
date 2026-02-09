@@ -5,7 +5,7 @@ import nextflow.Channel
 
 class Assembler {
 	static Map fromParams(opts) {
-		return opts
+		return [name:opts.name?:"long_flye_medaka",args:opts.args?:[:]]
 	}
 }
 
