@@ -83,8 +83,6 @@ workflow {
 	publish:
 	  input_readsets_csv    = Readsets.toCSV(readsets)
 	  filtered_readsets_csv = Readsets.toCSV(Readsets.fromChannels(SEQ_QC.out.short_filtered,SEQ_QC.out.long_filtered))
-	  filtered_long_reads   = SEQ_QC.out.long_filtered
-	  filtered_short_reads  = SEQ_QC.out.short_filtered
 		long_nanoplot         = SEQ_QC.out.long_nanoplot
 		short_fastp_json      = SEQ_QC.out.short_fastp_json
 		short_fastp_html      = SEQ_QC.out.short_fastp_html
@@ -99,17 +97,16 @@ output {
     }
 	}
 	filtered_readsets_csv {
+		path { m -> 
+			m.long_reads >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/filtered_long_reads.fastq.gz"
+			m.short_reads_1 >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/filtered_short_reads_1.fastq.gz"
+			m.short_reads_2 >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/filtered_short_reads_2.fastq.gz"
+		}
     index {
     	path 'indexes/seq_qc_filtered_readsets.csv'
     	header true
     }
 	}
-	filtered_long_reads {
-		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/filtered_long_reads.fastq.gz"}
-	}
-	filtered_short_reads {
-		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/filtered_short_reads/"}
-	}	
 	long_nanoplot {
 		path { m,x -> x >> "samples/${m.sample_id}/seq_qc/${m.readset_id}/long_nanoplot"}
 	}
