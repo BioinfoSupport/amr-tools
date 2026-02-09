@@ -25,6 +25,7 @@
         "exists": true,
         "pattern": "^\\S+\\.(bam|fastq\\.gz|fq\\.gz)$",
         "errorMessage": "Wrong path provided (cannot contain spaces and must end with .bam, .fastq.gz or .fq.gz)",
+        "meta": "long_reads"
       },
       "short_reads_1": {
         "type": "string",
@@ -32,6 +33,7 @@
         "exists": true,
         "pattern": "^\\S+\\.(fastq|fq)\\.gz$",
         "errorMessage": "Wrong path provided (cannot contain spaces and must end with .fastq.gz or .fq.gz)",
+        "meta": "short_reads_1"
       },
       "short_reads_2": {
         "type": "string",
@@ -39,6 +41,7 @@
         "exists": true,
         "pattern": "^\\S+\\.(fastq|fq)\\.gz$",
         "errorMessage": "Wrong path provided (cannot contain spaces and must end with .fastq.gz or .fq.gz)",
+        "meta": "short_reads_2"
       }
     }
   },
