@@ -24,7 +24,6 @@ workflow SEQ2ASM {
 			fq: true
 		})
 		fql_ch = fql_ch.fq.mix(SAMTOOLS_FASTQ(fql_ch.bam))
-
 		
 		def assemblies_fasta = Channel.empty()
 		def assemblies_dir = Channel.empty()
@@ -93,7 +92,7 @@ workflow SEQ2ASM {
 // Main entry point when running the pipeline from command line
 // ------------------------------------------------------------------
 import Readsets
-import Assemblies
+import Assembler
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 params.readsets = [
