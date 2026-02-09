@@ -75,12 +75,14 @@ workflow {
 		// Validate parameters and print summary of supplied ones
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
+		
 		def readsets = Readsets.fromParams(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
+		
 		SEQ_QC(params,Readsets.short_reads_channel(readsets),Readsets.long_reads_channel(readsets))
-  	def filtered_readsets = Readsets.fromChannels(SEQ_QC.out.short_filtered,SEQ_QC.out.long_filtered)
+  	
 	publish:
 	  input_readsets_csv    = Readsets.toCSV(readsets)
-	  filtered_readsets_csv = Readsets.toCSV(filtered_readsets)
+	  filtered_readsets_csv = Readsets.toCSV(Readsets.fromChannels(SEQ_QC.out.short_filtered,SEQ_QC.out.long_filtered))
 	  filtered_long_reads   = SEQ_QC.out.long_filtered
 	  filtered_short_reads  = SEQ_QC.out.short_filtered
 		long_nanoplot         = SEQ_QC.out.long_nanoplot
