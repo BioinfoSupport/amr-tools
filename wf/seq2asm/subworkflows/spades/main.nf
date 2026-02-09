@@ -6,8 +6,15 @@ workflow SPADES {
 	take:
 		fqs_ch
 		fql_ch
+		args
 	main:
-		SPADES_RUN(fqs_ch.join(fql_ch,remainder:true).map({meta,fqs,fql -> [meta,fqs?:[],fql?:[]]})) | SPADES_ADAPT
+		SPADES_RUN(
+			fqs_ch
+			.join(fql_ch,remainder:true)
+			.map({meta,fqs,fql -> [meta,fqs?:[],fql?:[]]})
+			.combine(Channel.from(args?:""))
+		) 
+		| SPADES_ADAPT
 	emit:
 		fasta = SPADES_ADAPT.out.fasta
 		dir   = SPADES_RUN.out
