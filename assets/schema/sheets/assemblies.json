@@ -39,10 +39,10 @@
         "description": "Parameters ",
         "meta": "assembler_readset_id"
       },
-			"assembler_parameters": {
+			"assembler_args": {
         "type": "string",
         "description": "Parameters ",
-        "meta": "assembler_parameters"
+        "meta": "assembler_args"
       }
       
     }

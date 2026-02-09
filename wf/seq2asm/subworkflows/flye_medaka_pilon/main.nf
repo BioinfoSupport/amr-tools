@@ -13,9 +13,18 @@ workflow FLYE_MEDAKA_PILON {
 	take:
 		fqs_ch
 		fql_ch
+		args
 	main:
-		FLYE(fql_ch) | FLYE_ADAPT
-		FLYE_ADAPT.out.fasta.join(fql_ch) | MEDAKA_CONSENSUS | MEDAKA_ADAPT
+		fql_ch
+		.combine(args.map({it.flye?:""})) 
+		| FLYE
+		| FLYE_ADAPT
+		
+		FLYE_ADAPT.out.fasta.join(fql_ch)
+		.combine(args.map({it.medaka?:""})) 
+		| MEDAKA_CONSENSUS 
+		| MEDAKA_ADAPT
+		
 		PILON_POLISH_ROUND1(MEDAKA_ADAPT.out.fasta,fqs_ch)
 		PILON_POLISH_ROUND2(PILON_POLISH_ROUND1.out.fasta,fqs_ch)
 		PILON_POLISH_ROUND3(PILON_POLISH_ROUND2.out.fasta,fqs_ch)
