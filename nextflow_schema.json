@@ -1,7 +1,7 @@
 {
 	"title": "Samples definition",
 	"type": "object",
-	"required": ["mode"]
+	"required": ["mode"],
 	
 	"properties": {
 		
@@ -53,7 +53,7 @@
 	      "description": "Limit the number input reads to this maximum total length (in bp), -1 to skip",
 	      "default": 1000000000
 	    }
-		}
+		},
 		
 		"assembler": {
 			"title": "Assembler definition",
