@@ -30,7 +30,7 @@ process COMBINE_QC_STATS {
 		"""
 }
 
-process ASSEMBLY_MULTIQC {
+process ASSEMBLIES_MULTIQC {
   container "registry.gitlab.unige.ch/amr-genomics/rscript:main"
   memory '8 GB'
   cpus 2
@@ -49,12 +49,20 @@ process ASSEMBLY_MULTIQC {
 		"""
 }
 
-workflow ASSEMBLY_QC {
+workflow ASSEMBLIES_QC {
 	take:
 		fa_ch
 		fqs_ch
 		fql_ch
 	main:
+	
+		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
+		fql_ch = fql_ch.branch({meta,f -> 
+			bam: f.name =~ /\.(bam|cram)$/
+			fq: true
+		})
+		fql_ch = fql_ch.fq.mix(SAMTOOLS_FASTQ(fql_ch.bam))
+
 		// Short reads alignment and statistics
 		BWA_MEM(BWA_INDEX(fa_ch).join(fqs_ch))
 		SAMTOOLS_STATS_SHORT(BWA_MEM.out.bam)
@@ -74,7 +82,7 @@ workflow ASSEMBLY_QC {
 			| ORGANIZE_FILES
 		
 		COMBINE_QC_STATS(ORGANIZE_FILES.out,"${moduleDir}/assets")
-		ASSEMBLY_MULTIQC(COMBINE_QC_STATS.out.rds.map({m,x -> x}).collect(),"${moduleDir}/assets")
+		ASSEMBLIES_MULTIQC(COMBINE_QC_STATS.out.rds.map({m,x -> x}).collect(),"${moduleDir}/assets")
 
 	emit:
 		long_bam        = MINIMAP2_ALIGN_ONT.out.bam
@@ -88,51 +96,7 @@ workflow ASSEMBLY_QC {
 		short_vcf       = Channel.empty()
 		
 		assembly_qc          = COMBINE_QC_STATS.out.rds
-		assembly_multiqc_txt = ASSEMBLY_MULTIQC.out
-}
-
-
-
-// ------------------------------------------------------------------
-// Main entry point when running the pipeline from command line
-// ------------------------------------------------------------------
-import AmrUtils
-include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
-
-params.readsets = [
-	csv         : null,
-	long_reads  : [],
-	short_reads : []
-]
-params.fasta = null
-
-workflow {
-	main:
-		// Validate parameters and print summary of supplied ones
-		validateParameters()
-		log.info(paramsSummaryLog(workflow))
-
-		def readsets   = AmrUtils.get_readsets(params.readsets,{sheet,schema -> samplesheetToList(sheet, schema)})
-		def assemblies = AmrUtils.get_assemblies(params.assemblies,{sheet,schema -> samplesheetToList(sheet, schema)})
-
-		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
-		readsets.long_reads = readsets.long_reads.branch({meta,f -> 
-			bam: f.name =~ /\.(bam|cram)$/
-			fq: true
-		})
-		readsets.long_reads = readsets.long_reads.fq.mix(SAMTOOLS_FASTQ(readsets.long_reads.bam))
-
-		// Run Assembly QC pipeline
-		ASSEMBLY_QC(assemblies.fasta,readsets.short_reads,readsets.long_reads)
-		
-	publish:
-		assembly_multiqc_txt  = ASSEMBLY_QC.out.assembly_multiqc_txt
-}
-
-output {
-	assembly_multiqc_txt {
-		path { it >> "./assembly_multiqc.txt" }
-	}
+		assembly_multiqc_txt = ASSEMBLIES_MULTIQC.out
 }
 
 

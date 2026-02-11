@@ -1,8 +1,8 @@
 
 
-include {READS_QC}  from './wf/reads_qc/main.nf'
-include {ASSEMBLE}  from './wf/assemble/main.nf'
-//include {ASM_QC}    from './wf/asm_qc/main.nf'
+include {READS_QC}      from './wf/reads_qc/main.nf'
+include {ASSEMBLE}      from './wf/assemble/main.nf'
+include {ASSEMBLIES_QC} from './wf/assemblies_qc/main.nf'
 //include {AMR_ANNOT} from './wf/amr_annot/main.nf'
 
 
@@ -30,7 +30,11 @@ workflow {
 			READS_QC.out.short_filtered,
 			READS_QC.out.long_filtered
 		)
-		
+		ASSEMBLIES_QC(
+			ASSEMBLE.out.fasta,
+			READS_QC.out.short_filtered,
+			READS_QC.out.long_filtered
+		)
 		
 }
 

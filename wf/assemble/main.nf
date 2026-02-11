@@ -75,7 +75,7 @@ workflow ASSEMBLE {
 				error "Unknown assembler name :${assembler_name}"
 		}
 	emit:
-		fasta = assemblies.fasta.map({meta,x -> [meta+['assembler_name':assembler_name],x]})
-		dir = assemblies.dir.map({meta,x -> [meta+['assembler_name':assembler_name],x]})
+		fasta = assemblies.fasta
+		dir = assemblies.dir
 }
 
