@@ -13,20 +13,16 @@
         "description": "Identifier for the assembly, must be provided and cannot contain spaces",
         "meta": "assembly_id"
       },
-      "fasta": {
+			"readset_id": {
         "type": "string",
-        "format": "file-path",
-        "exists": true,
-        "pattern": "^\\S+\\.(fasta|fa)$",
-        "description": "Path the FASTA file containing the assembly",
+        "description": "Parameters ",
+        "meta": "readset_id"
       },
-      "sample_id": {
+			"sample_id": {
         "type": "string",
-        "pattern": "^\\S+$",
-        "description": "Identifier for the sample the assembly belong to (equal to assembly_id by default)",
+        "description": "Parameters ",
         "meta": "sample_id"
       },
-
 			"assembler_name": {
         "type": "string",
         "pattern": "^\\S+$",
@@ -34,16 +30,25 @@
         "meta": "assembler_name",
         "default": "unknown"
       },
-			"assembler_readset_id": {
-        "type": "string",
-        "description": "Parameters ",
-        "meta": "assembler_readset_id"
-      },
 			"assembler_args": {
         "type": "string",
         "description": "Parameters ",
         "meta": "assembler_args"
-      }
+      },
+      "fasta": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true,
+        "pattern": "^\\S+\\.(fasta|fa)$",
+        "description": "Path the FASTA file containing the assembly",
+      },
+      "info": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true,
+        "pattern": "^\\S+\\.(txt|info|tsv)$",
+        "description": "Path tabular file describing each contig of the assembly",
+      }      
       
     }
   },
