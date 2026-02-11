@@ -36,27 +36,6 @@
         "errorMessage": "Wrong path provided (cannot contain spaces and must end with .fastq.gz or .fq.gz)",
         "meta": "reads_short_2"
       },
-			"assembler_name": {
-	      "type": "string",
-	      "description": "Name of the assembler that have produced the assembly",
-	      "enum": [
-	      	"long_flye",
-	        "long_flye_medaka",
-	        "long_hybracter",
-	        "long_unicycler",
-	        "short_spades",
-	        "short_unicycler",
-	        "hybrid_unicycler",
-	        "hybrid_hybracter",
-	        "hybrid_flye_medaka_pilon"
-	      ],
-	      "meta": "assembler_name"
-    	},
-			"assembler_args": {
-        "type": "string",
-        "description": "Parameters passed to the assembler",
-        "meta": "assembler_args"
-      },
       "assembly_fasta": {
         "type": "string",
         "format": "file-path",

@@ -4,13 +4,12 @@ process MEDAKA_CONSENSUS {
     cpus 4
     time '2h'
     input:
-        tuple val(meta), path('assembly.fasta'), path('long_reads.fastq.gz'), val(args)
+        tuple val(meta), path('assembly.fasta'), path('long_reads.fastq.gz')
     output:
         tuple val(meta), path('medaka',type:'dir')
     script:
 		    """
 		    medaka_consensus \\
-		      ${args?:''} \\
 		      ${task.ext.args?:'--bacteria'} \\
 			    -f -t ${task.cpus} \\
 			    -d assembly.fasta \\

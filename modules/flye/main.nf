@@ -4,13 +4,12 @@ process FLYE {
     cpus 8
     time '4h'
     input:
-        tuple val(meta), path('long_reads.fastq.gz'), val(args)
+        tuple val(meta), path('long_reads.fastq.gz')
     output:
         tuple val(meta), path('flye',type:'dir')
     script:
 		    """
 		    flye \\
-		      ${args?:''} \\
 		      ${task.ext.args?:''} \\
 		      --threads ${task.cpus} \\
 		      --out-dir ./flye \\

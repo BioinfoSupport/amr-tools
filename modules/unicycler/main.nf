@@ -4,7 +4,7 @@ process UNICYCLER {
     cpus 8
     time '4h'
     input:
-        tuple val(meta), path(illumina), path(nanopore), val(args)
+        tuple val(meta), path(illumina), path(nanopore)
     output:
         tuple val(meta), path('unicycler',type:'dir')
     script:
@@ -17,7 +17,6 @@ process UNICYCLER {
 		    #${illumina.class}
 		    #${illumina.join(" ")}
 		    unicycler \\
-		        ${args} \\
 		        ${task.ext.args?:''} \\
 		        --threads ${task.cpus} \\
 		        ${short_reads} ${nanopore_reads} \\

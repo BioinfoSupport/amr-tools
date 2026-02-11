@@ -1,7 +1,7 @@
 
 
 include {READS_QC}    from './wf/reads_qc/main.nf'
-//include {ASSEMBLE}   from './wf/assemble/main.nf'
+include {ASSEMBLE}   from './wf/assemble/main.nf'
 //include {ASM_QC}    from './asm_qc/main.nf'
 //include {AMR_ANNOT} from './amr_annot/main.nf'
 
@@ -31,9 +31,21 @@ workflow {
 
 		def samples = Samples.fromParams(params,{sheet,schema -> samplesheetToList(sheet, schema)})
 		
+		
 		if (params.mode=="reads_qc") {
-			READS_QC(params.reads_qc,Samples.short_reads_channel(samples),Samples.long_reads_channel(samples))	
-		} else if (params.mode=="assemble") {
+			READS_QC(params.reads_qc,Samples.short_reads_channel(samples),Samples.long_reads_channel(samples))
+		}
+		if (params.mode=="assemble") {
+			samples
+			.filter({it.reads_long})
+			.map({[it.subMab('sample_id','assembler_name','assembler_args'),it.reads_long]})
+			
+			ASSEMBLE(params.assembler,Samples.short_reads_channel(samples),Samples.long_reads_channel(samples))
+		}
+		if (params.mode=="assembly_qc") {
+			log.info("assemble not implemented yet !")
+		}
+		if (params.mode=="amr_annot") {
 			log.info("assemble not implemented yet !")
 		}
 		
