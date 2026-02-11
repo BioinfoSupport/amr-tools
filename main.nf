@@ -13,15 +13,7 @@ include {ASSEMBLE}   from './wf/assemble/main.nf'
 import Samples
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
-params.mode = null
-params.csv = null
-params.reads = [long:null,short:[]]
-params.assembler = [name:null,args:null]
-params.assemblies = [fasta:null,info:null]
-params.reads_qc = [
-		limit_long_reads_len: 1000000000,
-		limit_short_reads_len: 500000000
-]
+
 
 workflow {
 	main:
@@ -30,18 +22,23 @@ workflow {
 		log.info(paramsSummaryLog(workflow))
 
 		def samples = Samples.fromParams(params,{sheet,schema -> samplesheetToList(sheet, schema)})
-		
-		
-		if (params.mode=="reads_qc") {
-			READS_QC(params.reads_qc,Samples.short_reads_channel(samples),Samples.long_reads_channel(samples))
-		}
-		if (params.mode=="assemble") {
-			samples
-			.filter({it.reads_long})
-			.map({[it.subMab('sample_id','assembler_name','assembler_args'),it.reads_long]})
-			
-			ASSEMBLE(params.assembler,Samples.short_reads_channel(samples),Samples.long_reads_channel(samples))
-		}
+		READS_QC(
+			Samples.short_reads_channel(samples),
+			Samples.long_reads_channel(samples)
+		)
+		ASSEMBLE(
+			params.assembler.name,
+			Samples.short_reads_channel(samples),
+			Samples.long_reads_channel(samples)
+		)
+
+/*		
+		samples
+		.filter({it.reads_long})
+		.map({[it.subMab('sample_id','assembler_name','assembler_args'),it.reads_long]})
+*/
+
+
 		if (params.mode=="assembly_qc") {
 			log.info("assemble not implemented yet !")
 		}

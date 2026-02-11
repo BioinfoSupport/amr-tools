@@ -43,15 +43,15 @@
 		"reads_qc": {
 			"title": "Parameters for tool reads_qc",
 			"type": "object",
-	    "limit_long_reads_len": {
+	    "long_limit": {
 	      "type": "integer",
 	      "description": "Limit the number input reads to this maximum total length (in bp), -1 to skip",
 	      "default": 1000000000
 	    },
-	    "limit_short_reads_len": {
+	    "short_limit": {
 	      "type": "integer",
 	      "description": "Limit the number input reads to this maximum total length (in bp), -1 to skip",
-	      "default": 1000000000
+	      "default": 500000000
 	    }
 		},
 		
