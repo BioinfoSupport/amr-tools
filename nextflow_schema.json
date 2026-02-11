@@ -48,6 +48,14 @@
 	    }
 		},
 		
+		"amr": {
+			"title": "Parameters for tool amr annotation",
+			"type": "object",
+	    "force_org": {
+	      "type": "string"
+	    }
+		},
+				
 		"assembler": {
 			"title": "Assembler definition",
 			"type": "object",
@@ -64,7 +72,8 @@
 		        "short_unicycler",
 		        "hybrid_unicycler",
 		        "hybrid_hybracter",
-		        "hybrid_flye_medaka_pilon"
+		        "hybrid_flye_medaka_pilon",
+		        "none"
 		      ]
 		    },
 				"args": {

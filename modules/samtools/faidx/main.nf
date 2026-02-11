@@ -10,6 +10,10 @@ process SAMTOOLS_FAIDX {
     		tuple val(meta), path ("*.fai")
     script:
 		    """
-		    samtools faidx ${task.ext.args?:''} $fasta
+		    samtools faidx ${task.ext.args?:''} '${fasta}'
 		    """
+		stub:
+				"""
+				touch '${fasta}.fai'
+				"""
 }

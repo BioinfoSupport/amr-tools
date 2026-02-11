@@ -37,21 +37,6 @@ class Samples {
 		}
 	}
 	
-	static def toCSV(samples) {
-		return samples
-	}
-	
-	static def long_reads_channel(samples) {
-		return samples
-			.filter({it.reads_long})
-			.map({[it.subMap('sample_id'),it.reads_long]})
-	}
-
-	static def short_reads_channel(samples) {
-		return samples
-			.filter({it.reads_short_1})
-			.map({[it.subMap('sample_id'),[it.reads_short_1,it.short_reads_2].findAll({it})]})
-	}
 }
 
 
