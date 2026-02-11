@@ -9,21 +9,29 @@ include { PILON_POLISH as PILON_POLISH_ROUND2 } from './subworkflows/pilon_polis
 include { PILON_POLISH as PILON_POLISH_ROUND3 } from './subworkflows/pilon_polish'
 
 
-workflow FLYE_MEDAKA {
+workflow LONG_FLYE {
   take:
-		fqs_ch
 		fql_ch
 	main:
 		fql_ch
 		| FLYE
 		| FLYE_ADAPT
-		
-		FLYE_ADAPT.out.fasta.join(fql_ch)
+	emit:
+		fasta = FLYE_ADAPT.out.fasta
+		dir = FLYE.out
+}
+
+workflow LONG_FLYE_MEDAKA {
+  take:
+		fql_ch
+	main:
+		LONG_FLYE(fql_ch)
+		LONG_FLYE.out.fasta.join(fql_ch)
 		| MEDAKA_CONSENSUS 
 		| MEDAKA_ADAPT
 		
 		ORGANIZE_FILES(
-			FLYE.out
+			LONG_FLYE.out.dir
 			.join(MEDAKA_CONSENSUS.out, remainder: true)
 			.map({meta,x1,x2 -> tuple(meta,[[x1,'01_flye'],[x2,'02_medaka']].findAll({x,y -> x}))})
 		)
@@ -33,23 +41,23 @@ workflow FLYE_MEDAKA {
 }
 
 
-workflow FLYE_MEDAKA_PILON {
+workflow HYBRID_FLYE_MEDAKA_PILON {
 	take:
 		fqs_ch
 		fql_ch
 	main:
-		FLYE_MEDAKA(fqs_ch,fql_ch)
-		PILON_POLISH_ROUND1(FLYE_MEDAKA.out.fasta,fqs_ch)
+		LONG_FLYE_MEDAKA(fql_ch)
+		PILON_POLISH_ROUND1(LONG_FLYE_MEDAKA.out.fasta,fqs_ch)
 		PILON_POLISH_ROUND2(PILON_POLISH_ROUND1.out.fasta,fqs_ch)
 		PILON_POLISH_ROUND3(PILON_POLISH_ROUND2.out.fasta,fqs_ch)
 		ORGANIZE_FILES(
-			FLYE_MEDAKA.out.dir
+			LONG_FLYE_MEDAKA.out.dir
 			.join(PILON_POLISH_ROUND1.out.dir, remainder: true)
 			.join(PILON_POLISH_ROUND2.out.dir, remainder: true)
 			.join(PILON_POLISH_ROUND3.out.dir, remainder: true)
 			.map({meta,x1,x2,x3,x4 -> tuple(meta,[[x1,'01_flye_medaka'],[x2,'02_pilon_round1'],[x3,'03_pilon_round2'],[x4,'04_pilon_round3']].findAll({x,y -> x}))})
 		)
-		fa_ch = FLYE_MEDAKA.out.fasta
+		fa_ch = LONG_FLYE_MEDAKA.out.fasta
 		.join(PILON_POLISH_ROUND3.out.fasta,remainder: true)
 		.map({meta,fa1,fa2 -> [meta,fa2?fa2:fa1]})
 	emit:

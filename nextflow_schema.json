@@ -1,16 +1,9 @@
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["mode"],
 	
 	"properties": {
-		
-		"mode": {
-			"type": "string",
-			"description": "Name of the tool to run",
-      "enum": ["reads_qc","assemble","assembly_qc","amr_annot"]
-		},
-		
+
 		"csv": {
 			"type": "string",
 			"format": "file-path",
@@ -75,8 +68,25 @@
 		      ]
 		    },
 				"args": {
-					"type": "string",
-					"description": "Argument to pass to the assembler"
+					"type": "object",
+					"description": "Argument to pass to the assembler",
+					"properties": {
+						"flye": {
+							"type": "string"
+						},
+						"medaka": {
+							"type": "string"
+						},
+						"spades": {
+							"type": "string"
+						},
+						"unicycler": {
+							"type": "string"
+						},
+						"hybracter": {
+							"type": "string"
+						}
+					}
 				}
 			}
 		},
