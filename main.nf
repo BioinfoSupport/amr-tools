@@ -13,16 +13,14 @@ include {READS_QC}    from './wf/reads_qc/main.nf'
 import Samples
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
-params = [
-	mode      : null,
-	csv       : null,
-	reads     : [long:null,short:[]],
-	assembler : [name:null,args:null],
-	assemblies: [fasta:null,info:null],
-	reads_qc: [
+params.mode = null
+params.csv = null
+params.reads = [long:null,short:[]]
+params.assembler = [name:null,args:null]
+params.assemblies = [fasta:null,info:null]
+params.reads_qc = [
 		limit_long_reads_len: 1000000000,
-		limit_short_reads_len: 1000000000
-	]
+		limit_short_reads_len: 500000000
 ]
 
 workflow {
@@ -34,7 +32,7 @@ workflow {
 		def samples = Samples.fromParams(params,{sheet,schema -> samplesheetToList(sheet, schema)})
 		
 		if (params.mode=="reads_qc") {
-			READS_QC(params,Readsets.short_reads_channel(readsets),Readsets.long_reads_channel(readsets))	
+			READS_QC(params.reads_qc,Samples.short_reads_channel(samples),Samples.long_reads_channel(samples))	
 		} else if (params.mode=="assemble") {
 			log.info("assemble not implemented yet !")
 		}

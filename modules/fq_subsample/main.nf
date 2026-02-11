@@ -24,8 +24,6 @@ process FQ_SUBSAMPLE {
     			"""}).join("\n")
     		}
     stub:
-	    """
-	    touch subsampled_reads.fastq.gz
-	    """
+    	reads.withIndex().collect({x,i -> "touch 'subsampled_reads_${i+1}.fastq.gz'"}).join("\n")
 }
 

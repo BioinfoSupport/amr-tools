@@ -23,8 +23,8 @@ workflow READS_QC {
 		fql_ch = fql_ch.fq.mix(SAMTOOLS_FASTQ(fql_ch.bam))
 
 		// Reduce FASTQ size if needed
-		fql_ch = FQ_SUBSAMPLE_LONG(fql_ch,params.limit_long_reads_len)
-		fqs_ch = FQ_SUBSAMPLE_SHORT(fqs_ch,params.limit_short_reads_len)
+		fql_ch = FQ_SUBSAMPLE_LONG(fql_ch,opts.limit_long_reads_len)
+		fqs_ch = FQ_SUBSAMPLE_SHORT(fqs_ch,opts.limit_short_reads_len)
 
 		// Run nanoplot once on each FASTQ, and then expand to inputs sharing the same FASTQ
 		NANOPLOT(fql_ch)
