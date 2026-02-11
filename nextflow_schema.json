@@ -1,0 +1,106 @@
+{
+	"title": "Samples definition",
+	"type": "object",
+	"required": ["mode"]
+	
+	"properties": {
+		
+		"mode": {
+			"type": "string",
+			"description": "Name of the tool to run",
+      "enum": ["reads_qc","assemble","assembly_qc","amr_annot"]
+		},
+		
+		"csv": {
+			"type": "string",
+			"format": "file-path",
+			"exists": true,
+			"pattern": "^\\S+\\.(csv)$",
+			"description": "Path to a CSV file containing the readsets."
+		},
+		
+		"reads": {
+			"title": "Reads definition",
+			"type": "object",
+			"properties": {
+				"long": {
+					"type": "string",
+					"format": "file-path-pattern",
+					"exists": true,
+					"pattern": "^\\S+\\.(bam|fastq\\.gz|fq\\.gz)$",
+					"description": "Path to BAM or FASTQ.GZ files containing ONT reads"
+				},
+				"short": {
+					"type": "string",
+					"format": "file-path-pattern",
+					"exists": true,
+					"pattern": "^\\S+\\.(fastq\\.gz|fq\\.gz)$",
+					"description": "Path to FASTQ.GZ files containing short reads. Pairend-end files are reconized when ending with regex pattern '_(R?[12])(_001)?.(fq|fastq).gz$'"
+				}
+			}
+		},
+		
+		"reads_qc": {
+			"title": "Parameters for tool reads_qc",
+			"type": "object",
+	    "limit_long_reads_len": {
+	      "type": "integer",
+	      "description": "Limit the number input reads to this maximum total length (in bp), -1 to skip",
+	      "default": 1000000000
+	    },
+	    "limit_short_reads_len": {
+	      "type": "integer",
+	      "description": "Limit the number input reads to this maximum total length (in bp), -1 to skip",
+	      "default": 1000000000
+	    }
+		}
+		
+		"assembler": {
+			"title": "Assembler definition",
+			"type": "object",
+			"properties": {
+		    "name": {
+		      "type": "string",
+		      "default": "long_flye_medaka",
+		      "enum": [
+		      	"long_flye",
+		        "long_flye_medaka",
+		        "long_hybracter",
+		        "long_unicycler",
+		        "short_spades",
+		        "short_unicycler",
+		        "hybrid_unicycler",
+		        "hybrid_hybracter",
+		        "hybrid_flye_medaka_pilon"
+		      ]
+		    },
+				"args": {
+					"type": "string",
+					"description": "Argument to pass to the assembler"
+				}
+			}
+		},
+
+		"assemblies": {
+			"title": "Assemblies definition",
+			"type": "object",
+			"properties": {
+				"fasta": {
+					"type": "string",
+					"format": "file-path-pattern",
+					"exists": true,
+					"pattern": "^\\S+\\.(fasta|fa)$",
+					"description": "Path to FASTA file containing assembly contigs"
+				},
+				"info": {
+					"type": "string",
+					"format": "file-path-pattern",
+					"exists": true,
+					"pattern": "^\\S+\\.(fasta|fa)$",
+					"description": "Path to FASTA file containing assembly contigs"
+				}		
+			}
+		}
+		
+	}
+}

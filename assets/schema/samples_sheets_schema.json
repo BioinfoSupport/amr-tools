@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "nf-amr pipeline - params.readsets schema",
+  "description": "Schema for the file provided with params.readsets",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "sample_id": {
+        "type": "string",
+        "pattern": "^\\S+$",
+        "errorMessage": "Identifier for the sample the readset belong to, by default equal to readset_id",
+        "meta": "sample_id"
+      },
+      "reads_long": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true,
+        "pattern": "^\\S+\\.(bam|fastq\\.gz|fq\\.gz)$",
+        "errorMessage": "Wrong path provided (cannot contain spaces and must end with .bam, .fastq.gz or .fq.gz)",
+        "meta": "reads_long"
+      },
+      "reads_short_1": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true,
+        "pattern": "^\\S+\\.(fastq|fq)\\.gz$",
+        "errorMessage": "Wrong path provided (cannot contain spaces and must end with .fastq.gz or .fq.gz)",
+        "meta": "reads_short_1"
+      },
+      "reads_short_2": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true,
+        "pattern": "^\\S+\\.(fastq|fq)\\.gz$",
+        "errorMessage": "Wrong path provided (cannot contain spaces and must end with .fastq.gz or .fq.gz)",
+        "meta": "reads_short_2"
+      },
+			"assembler_name": {
+	      "type": "string",
+	      "description": "Name of the assembler that have produced the assembly",
+	      "enum": [
+	      	"long_flye",
+	        "long_flye_medaka",
+	        "long_hybracter",
+	        "long_unicycler",
+	        "short_spades",
+	        "short_unicycler",
+	        "hybrid_unicycler",
+	        "hybrid_hybracter",
+	        "hybrid_flye_medaka_pilon"
+	      ],
+	      "meta": "assembler_name"
+    	},
+			"assembler_args": {
+        "type": "string",
+        "description": "Parameters passed to the assembler",
+        "meta": "assembler_args"
+      },
+      "assembly_fasta": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true,
+        "pattern": "^\\S+\\.(fasta|fa)$",
+        "description": "Path the FASTA file containing the assembly",
+        "meta": "assembly_fasta"
+      },
+      "assembly_info": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true,
+        "pattern": "^\\S+\\.(txt|info|tsv)$",
+        "description": "Path tabular file describing each contig of the assembly",
+        "meta": "assembly_info"
+      }      
+
+    }
+  },
+	"allOf": [
+	  {"uniqueEntries": ["sample_id"]}
+	]
+}
