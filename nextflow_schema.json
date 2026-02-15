@@ -8,7 +8,9 @@
       "type": "string",
       "enum": [
       	"reads_filter",
-        "assemble"
+        "assemble",
+        "assembly_qc",
+        "amr_annot"
       ]
     },
 
@@ -41,8 +43,8 @@
 			}
 		},
 		
-		"reads_qc": {
-			"title": "Parameters for tool reads_qc",
+		"reads_filter": {
+			"title": "Parameters for tool reads_filter",
 			"type": "object",
 	    "long_limit": {
 	      "type": "integer",

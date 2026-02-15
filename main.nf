@@ -49,14 +49,18 @@ workflow {
 		reads_long_filtered = (params.command in ['reads_filter'])?READS_FILTER.out.long_filtered:Channel.empty()
 		reads_short_filtered = (params.command in ['reads_filter'])?READS_FILTER.out.short_filtered:Channel.empty()
 		assemblies_fasta = (params.command in ['assemble'])?ASSEMBLE.out.fasta:Channel.empty()
+		assemblies_fai = (params.command in ['assemble'])?ASSEMBLE.out.fai:Channel.empty()
 		orgfinder = (params.command in ['amr_annot'])?AMR_ANNOT.out.orgfinder:Channel.empty()
 }
 
 output {
+	
+	// -------------------
+  // reads_filter command
+  // -------------------
 	reads_long_filtered {
 		path { m,x -> x >> "reads/filtered_long/${m.sample_id}.fastq.gz"}
 	}
-	
 	reads_short_filtered {
 		path { m,x -> 
 			x = x instanceof List?x:[x]
@@ -66,10 +70,24 @@ output {
 		}
 	}
 
-	assemblies_fasta {
-		path { m,x -> x >> "assemblies/${params.assembler.name}/${m.sample_id}/asm.fasta"}
-	}
 
+
+  // -------------------
+  // assemble command
+  // -------------------
+	assemblies_fasta {
+		path { m,x -> x >> "assemblies/${params.assembler.name}/${m.sample_id}.fasta"}
+	}
+	assemblies_fai {
+		path { m,x -> x >> "assemblies/${params.assembler.name}/${m.sample_id}.fasta.fai"}
+	}
+	
+	
+	
+	
+  // -------------------
+  // amr_annot command
+  // -------------------	
 	orgfinder {
 		path { m,x -> x >> "assemblies/${params.assembler.name}/${m.sample_id}/orgfinder"}
 	}

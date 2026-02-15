@@ -1,6 +1,7 @@
 
 
 include { SAMTOOLS_FASTQ                } from './modules/samtools/fastq'
+include { SAMTOOLS_FAIDX                } from './modules/samtools/faidx'
 include { LONG_FLYE                     } from './subworkflows/flye_medaka_pilon'
 include { LONG_FLYE_MEDAKA              } from './subworkflows/flye_medaka_pilon'
 include { UNICYCLER as LONG_UNICYCLER   } from './subworkflows/unicycler'
@@ -70,12 +71,15 @@ workflow ASSEMBLE {
 				HYBRID_FLYE_MEDAKA_PILON(fqs_ch,fql_ch)
 				assemblies = [fasta:HYBRID_FLYE_MEDAKA_PILON.out.fasta,dir:HYBRID_FLYE_MEDAKA_PILON.out.dir]
 				break
-
 			default:
 				error "Unknown assembler name :${assembler_name}"
 		}
+		
+		SAMTOOLS_FAIDX(assemblies.fasta)
+		
 	emit:
 		fasta = assemblies.fasta
+		fai   = SAMTOOLS_FAIDX.out
 		dir = assemblies.dir
 }
 
