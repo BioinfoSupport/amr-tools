@@ -9,7 +9,7 @@ include { MULTIQC            } from './modules/multiqc'
 
 
 
-workflow READS_QC {
+workflow READS_FILTER {
 	take:
 		fqs_ch    // channel: [ val(meta), path(short_reads) ]	
 		fql_ch    // channel: [ val(meta), path(long_reads) ]

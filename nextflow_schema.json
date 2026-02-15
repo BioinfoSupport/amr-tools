@@ -1,8 +1,16 @@
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
+  "required": ["command"],
 	
 	"properties": {
+		"command": {
+      "type": "string",
+      "enum": [
+      	"reads_filter",
+        "assemble"
+      ]
+    },
 
 		"csv": {
 			"type": "string",
@@ -72,8 +80,7 @@
 		        "short_unicycler",
 		        "hybrid_unicycler",
 		        "hybrid_hybracter",
-		        "hybrid_flye_medaka_pilon",
-		        "none"
+		        "hybrid_flye_medaka_pilon"
 		      ]
 		    },
 				"args": {

@@ -8,7 +8,7 @@ process SPADES {
     output:
         tuple val(meta), path('spades',type:'dir')
     script:
-	      def nanopore_reads = nanopore?"--nanopore $nanopore":''
+	      def nanopore_reads = nanopore?"--nanopore '$nanopore'":''
 	      illumina = illumina instanceof List?illumina:[illumina]
 	      def short_reads = illumina?(illumina.size()==1?"-s ${illumina[0]}":"-1 ${illumina[0]} -2 ${illumina[1]}"):''
 		    """
