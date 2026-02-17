@@ -4,7 +4,7 @@
   "required": ["command"],
 	
 	"properties": {
-		"command": {
+		"subcommand": {
       "type": "string",
       "enum": [
       	"reads_filter",

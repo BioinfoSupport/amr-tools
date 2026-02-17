@@ -1,9 +1,12 @@
 
 include { SAMTOOLS_FASTQ     } from './modules/samtools/fastq'
 include { FQ_SUBSAMPLE as FQ_SUBSAMPLE_LONG  } from './modules/fq_subsample'
-include { FQ_SUBSAMPLE as FQ_SUBSAMPLE_SHORT } from './modules/fq_subsample'
+include { CHOPPER            } from './modules/chopper'
 include { NANOPLOT           } from './modules/nanoplot'
+
+include { FQ_SUBSAMPLE as FQ_SUBSAMPLE_SHORT } from './modules/fq_subsample'
 include { FASTP              } from './modules/fastp'
+
 include { ORGANIZE_FILES     } from './modules/organize_files'
 include { MULTIQC            } from './modules/multiqc'
 
@@ -22,9 +25,9 @@ workflow READS_FILTER {
 		fql_ch = fql_ch.fq.mix(SAMTOOLS_FASTQ(fql_ch.bam))
 
 		// Reduce FASTQ size if needed
-		fql_ch = FQ_SUBSAMPLE_LONG(fql_ch)
-		fqs_ch = FQ_SUBSAMPLE_SHORT(fqs_ch)
-
+		fql_ch = fql_ch | CHOPPER | FQ_SUBSAMPLE_LONG
+		fqs_ch = fqs_ch | FQ_SUBSAMPLE_SHORT
+		
 		// Run nanoplot once on each FASTQ, and then expand to inputs sharing the same FASTQ
 		NANOPLOT(fql_ch)
 

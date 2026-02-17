@@ -27,30 +27,51 @@ workflow {
 			.filter({it.reads_long})
 			.map({[it.subMap('sample_id'),it.reads_long]})
 
-		// Filter reads
-		switch(params.command) {
+
+		def long_filtered_ch = Channel.empty()
+		def short_filtered_ch = Channel.empty()
+		def assemblies_fasta_ch = Channel.empty()
+		def assemblies_fai_ch = Channel.empty()
+		def orgfinder_ch = Channel.empty()
+		switch(params.subcommand) {
 			case 'reads_filter':
 				READS_FILTER(sr_ch,lr_ch)
+				long_filtered_ch = READS_FILTER.out.long_filtered
+				short_filtered_ch = READS_FILTER.out.short_filtered
 				break
 			case 'assemble':
 				ASSEMBLE(params.assembler.name,sr_ch,lr_ch)
 				break
 			case 'assembly_qc':
 				ASSEMBLIES_QC(ASSEMBLE.out.fasta,sr_ch,lr_ch)
+				assemblies_fasta_ch = ASSEMBLE.out.fasta
+				assemblies_fai_ch = ASSEMBLE.out.fasta
 				break
 			case 'amr_annot':
 				AMR_ANNOT(params.amr_annot,ASSEMBLE.out.fasta,sr_ch,lr_ch)
+				orgfinder_ch = AMR_ANNOT.out.orgfinder
 				break
 			default:
-				error "Unknown command :${params.command}"
+				READS_FILTER(sr_ch,lr_ch)
+				ASSEMBLE(
+					params.assembler.name,
+					READS_FILTER.out.short_filtered,
+					READS_FILTER.out.long_filtered
+				)
+				AMR_ANNOT(params.amr_annot,ASSEMBLE.out.fasta,READS_FILTER.out.short_filtered,READS_FILTER.out.long_filtered)
+				long_filtered_ch = READS_FILTER.out.long_filtered
+				short_filtered_ch = READS_FILTER.out.short_filtered
+				assemblies_fasta_ch = ASSEMBLE.out.fasta
+				assemblies_fai_ch = ASSEMBLE.out.fasta
+				orgfinder_ch = AMR_ANNOT.out.orgfinder
 		}		
 		
 	publish:
-		reads_long_filtered = (params.command in ['reads_filter'])?READS_FILTER.out.long_filtered:Channel.empty()
-		reads_short_filtered = (params.command in ['reads_filter'])?READS_FILTER.out.short_filtered:Channel.empty()
-		assemblies_fasta = (params.command in ['assemble'])?ASSEMBLE.out.fasta:Channel.empty()
-		assemblies_fai = (params.command in ['assemble'])?ASSEMBLE.out.fai:Channel.empty()
-		orgfinder = (params.command in ['amr_annot'])?AMR_ANNOT.out.orgfinder:Channel.empty()
+		reads_long_filtered = long_filtered_ch
+		reads_short_filtered = short_filtered_ch
+		assemblies_fasta = assemblies_fasta_ch
+		assemblies_fai = assemblies_fai_ch
+		orgfinder = orgfinder_ch
 }
 
 output {
