@@ -1,6 +1,7 @@
 
 import nextflow.Channel
 
+
 class Samples {
 	
 	static def fromCSV(csv_path,samplesheetToList) {
@@ -8,11 +9,20 @@ class Samples {
 			.map({it[0]})
 	}
 
-	static def fromChannels(sr_ch,lr_ch) {
-		return lr_ch.ifEmpty(['__sentinel__',null])
+	static def fromChannels(sr_ch,lr_ch,fa_ch) {
+		def meta_ch = lr_ch.map({it[0]}).mix(sr_ch.map({it[0]}),fa_ch.map({it[0]})).unique()
+		
+		return meta_ch.ifEmpty(['__sentinel__',null])
+			.join(lr_ch.ifEmpty(['__sentinel__',null]),failOnDuplicate:true,remainder:true)
 			.join(sr_ch.ifEmpty(['__sentinel__',null]),failOnDuplicate:true,remainder:true)
+			.join(fa_ch.ifEmpty(['__sentinel__',null]),failOnDuplicate:true,remainder:true)
 			.filter({it[0]!='__sentinel__'})
-			.map({it[0] + [reads_long:it[1],reads_short_1:it[2]?it[2][0]:null,reads_short_2:it[2]?it[2][1]:null]})
+			.map({it[0] + [
+				reads_long:it[1],
+				reads_short_1:it[2]?it[2][0]:null,
+				reads_short_2:it[2]?it[2][1]:null,
+				assembly_fasta: it[3]
+			]})
 	}
 
 	static def fromParams(opts,samplesheetToList) {
@@ -21,19 +31,26 @@ class Samples {
 		} else {
 			def sr_ch = Channel.empty()
 			def lr_ch = Channel.empty()
+			def fa_ch = Channel.empty()
 	  	if (opts.reads.long) {
 	  		lr_ch = Channel.fromPath(opts.reads.long).map({
 	  				def id = it.name.replaceAll(/\.(fastq\.gz|fq\.gz|bam|cram)$/,'')
 	  				[[sample_id:id],it]
 	  		})
 	  	}
+	  	if (opts.assemblies.fasta) {
+				fa_ch = Channel.fromPath(opts.assemblies.fasta).map({
+	  				def id = it.name.replaceAll(/\.(fasta|fa|fna)$/,'')
+	  				[[sample_id:id],it]
+	  		})
+	  	}	  	
 	  	if (opts.reads.short) {
 				sr_ch = Channel.fromFilePairs(opts.reads.short,size:-1) { 
 						file -> file.name.replaceAll(/_(R?[12])(_001)?\.(fq|fastq)\.gz$/, '') 
 				}
 				.map({id,x -> [[sample_id:id],x]})
 	  	}
-			return fromChannels(sr_ch,lr_ch)			
+			return fromChannels(sr_ch,lr_ch,fa_ch)			
 		}
 	}
 	

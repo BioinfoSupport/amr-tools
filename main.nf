@@ -19,6 +19,7 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
+
 		def samples = Samples.fromParams(params,{sheet,schema -> samplesheetToList(sheet, schema)})
 		def sr_ch = samples
 				.filter({it.reads_short_1})
@@ -27,58 +28,45 @@ workflow {
 			.filter({it.reads_long})
 			.map({[it.subMap('sample_id'),it.reads_long]})
 
-
-		def long_filtered_ch = Channel.empty()
-		def short_filtered_ch = Channel.empty()
-		def assemblies_fasta_ch = Channel.empty()
-		def assemblies_fai_ch = Channel.empty()
-		def orgfinder_ch = Channel.empty()
-		switch(params.subcommand) {
-			case 'reads_filter':
-				READS_FILTER(sr_ch,lr_ch)
-				long_filtered_ch = READS_FILTER.out.long_filtered
-				short_filtered_ch = READS_FILTER.out.short_filtered
-				break
-			case 'assemble':
-				ASSEMBLE(params.assembler.name,sr_ch,lr_ch)
-				break
-			case 'assembly_qc':
-				ASSEMBLIES_QC(ASSEMBLE.out.fasta,sr_ch,lr_ch)
-				assemblies_fasta_ch = ASSEMBLE.out.fasta
-				assemblies_fai_ch = ASSEMBLE.out.fasta
-				break
-			case 'amr_annot':
-				AMR_ANNOT(params.amr_annot,ASSEMBLE.out.fasta,sr_ch,lr_ch)
-				orgfinder_ch = AMR_ANNOT.out.orgfinder
-				break
-			default:
-				READS_FILTER(sr_ch,lr_ch)
-				ASSEMBLE(
-					params.assembler.name,
-					READS_FILTER.out.short_filtered,
-					READS_FILTER.out.long_filtered
-				)
-				AMR_ANNOT(params.amr_annot,ASSEMBLE.out.fasta,READS_FILTER.out.short_filtered,READS_FILTER.out.long_filtered)
-				long_filtered_ch = READS_FILTER.out.long_filtered
-				short_filtered_ch = READS_FILTER.out.short_filtered
-				assemblies_fasta_ch = ASSEMBLE.out.fasta
-				assemblies_fai_ch = ASSEMBLE.out.fasta
-				orgfinder_ch = AMR_ANNOT.out.orgfinder
-		}		
+		// First, filter reads
+		READS_FILTER(sr_ch,lr_ch)
 		
+		// Determine assemblies that are done and thus that have to be run
+		def asm_ch = samples.branch({
+			done: it.assembly_fasta
+			todo: true
+		})
+		
+		ASSEMBLE(
+				params.assembler.name,
+				sr_ch.join(asm_ch.todo.map({[it.subMap('sample_id')]})),
+				lr_ch.join(asm_ch.todo.map({[it.subMap('sample_id')]}))
+		)
+
+		def asm_fa_ch = Channel.empty().mix(
+			//asm_ch.done.map({[it.subMap('sample_id'),[assembler_name:'none'], file(it.assembly_fasta)]}),
+			ASSEMBLE.out.fasta.map({[it[0],[assembler_name:params.assembler.name],it[1]]})
+		)
+
+		// Finally run AMR annotations
+		AMR_ANNOT(
+			params.amr_annot,
+			asm_fa_ch.map({[it[0]+it[1],it[2]]}),
+			asm_fa_ch.join(READS_FILTER.out.short_filtered).map({[it[0]+it[1]?:[:],it[3]]}),
+			asm_fa_ch.join(READS_FILTER.out.long_filtered).map({[it[0]+it[1]?:[:],it[3]]})
+		)
+
+//asm_fa_ch.map({ m,m2,x -> "assemblies/${m2.assembler_name}/${m.sample_id}.fasta"}).view()
+
 	publish:
-		reads_long_filtered = long_filtered_ch
-		reads_short_filtered = short_filtered_ch
-		assemblies_fasta = assemblies_fasta_ch
-		assemblies_fai = assemblies_fai_ch
-		orgfinder = orgfinder_ch
+		reads_long_filtered = READS_FILTER.out.long_filtered
+		reads_short_filtered = READS_FILTER.out.short_filtered
+		assemblies_fasta = asm_fa_ch
+		//orgfinder = AMR_ANNOT.out.orgfinder
 }
 
 output {
 	
-	// -------------------
-  // reads_filter command
-  // -------------------
 	reads_long_filtered {
 		path { m,x -> x >> "reads/filtered_long/${m.sample_id}.fastq.gz"}
 	}
@@ -90,28 +78,14 @@ output {
       }
 		}
 	}
-
-
-
-  // -------------------
-  // assemble command
-  // -------------------
 	assemblies_fasta {
-		path { m,x -> x >> "assemblies/${params.assembler.name}/${m.sample_id}.fasta"}
+		path { m,m2,x -> x >> "assemblies/${m2.assembler_name}/${m.sample_id}.fasta"}
 	}
-	assemblies_fai {
-		path { m,x -> x >> "assemblies/${params.assembler.name}/${m.sample_id}.fasta.fai"}
-	}
-	
-	
-	
-	
-  // -------------------
-  // amr_annot command
-  // -------------------	
+/*
 	orgfinder {
-		path { m,x -> x >> "assemblies/${params.assembler.name}/${m.sample_id}/orgfinder"}
+		path { m,x -> x >> "assemblies/${m.assembler_name}/${m.sample_id}/orgfinder"}
 	}
+*/
 }
 
 
