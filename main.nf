@@ -1,13 +1,13 @@
 
-include {SAMTOOLS_FASTQ}                from './modules/samtools/fastq' 
-include {READS_FILTER}                  from './wf/reads_filter/main.nf'
-include {READS_QC as FILTERED_READS_QC} from './wf/reads_qc/main.nf'
-include {ASSEMBLE}      from './wf/assemble/main.nf'
-include {ASSEMBLIES_QC} from './wf/assemblies_qc/main.nf'
-include {AMR_ANNOT}     from './wf/amr_annot/main.nf'
-include {IDENTITY as COPY_ASSEMBLY_FASTA}  from './modules/identity/main.nf'
-include {IDENTITY as COPY_SHORT_READS}     from './modules/identity/main.nf'
-include {IDENTITY as COPY_LONG_READS}      from './modules/identity/main.nf'
+include { SAMTOOLS_FASTQ as CONVERT_LONG_BAM_TO_FASTQ } from './modules/samtools/fastq' 
+include { READS_FILTER                                } from './wf/reads_filter/main.nf'
+include { READS_QC as FILTERED_READS_QC               } from './wf/reads_qc/main.nf'
+include { ASSEMBLE                                    } from './wf/assemble/main.nf'
+include { ASSEMBLIES_QC                               } from './wf/assemblies_qc/main.nf'
+include { AMR_ANNOT                                   } from './wf/amr_annot/main.nf'
+include { IDENTITY as COPY_ASSEMBLY_FASTA             } from './modules/identity/main.nf'
+include { IDENTITY as COPY_SHORT_READS                } from './modules/identity/main.nf'
+include { IDENTITY as COPY_LONG_READS                 } from './modules/identity/main.nf'
 
 // ------------------------------------------------------------------
 // Main entry point when running the pipeline from command line
@@ -41,7 +41,7 @@ workflow {
 			bam: f.name =~ /\.(bam|cram)$/
 			fq: true
 		})
-		lr_ch = lr_ch.fq.mix(SAMTOOLS_FASTQ(lr_ch.bam))
+		lr_ch = lr_ch.fq.mix(CONVERT_LONG_BAM_TO_FASTQ(lr_ch.bam))
 
 		// Filter reads
 		READS_FILTER(sr_ch,lr_ch)
@@ -75,14 +75,14 @@ workflow {
 		
 
 		// Finally run AMR annotations
-		/*
+	/*	
 		AMR_ANNOT(
 			params.amr_annot,
-			asm_fa_ch.map({[it[0]+it[1],it[2]]}),
-			asm_fa_ch.join(READS_FILTER.out.short_filtered).map({[it[0]+it[1]?:[:],it[3]]}),
-			asm_fa_ch.join(READS_FILTER.out.long_filtered).map({[it[0]+it[1]?:[:],it[3]]})
+			asm_fa_ch,
+			READS_FILTER.out.short_filtered.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]}),
+			READS_FILTER.out.long_filtered.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]})
 		)
-		*/
+	*/	
 
 	publish:
 		reads_long_filtered = READS_FILTER.out.long_filtered

@@ -2,7 +2,7 @@
 process FQ_SUBSAMPLE {
     container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
     memory '2 GB'
-    cpus 4
+    cpus 1
     time '30 min'
     input:
     		tuple val(meta), path(reads)
@@ -16,23 +16,7 @@ process FQ_SUBSAMPLE {
     		} else {
 					"""
 					set +o pipefail
-					awk '
-						BEGIN{bp=0;for(i=1;i<length(ARGV);i++){print ARGV[i]}}
-						{for(i=1;i<length(ARGV);i++){"gzip -dc " ARGV[i] | getline line[i "_" NR%4]}}
-						NR%4==0 {
-					    for(i=1;i<length(ARGV);i++) {
-					      if (line[i "_" 1]!~/^@/) {print "Expected @ at line " NR " of file " ARGV[i] > "/dev/stderr";exit 1}
-					      if (line[i "_" 3]!~/^[+]/) {print "Expected + at line " NR " of file " ARGV[i] > "/dev/stderr";exit 1}
-					      bp += length(line[i "_" 2])
-					      ocmd = "gzip > subsampled_reads_" i ".fastq.gz"
-					      print line[i "_" 1] | ocmd
-					      print line[i "_" 2] | ocmd
-					      print line[i "_" 3] | ocmd
-					      print line[i "_" 0] | ocmd
-					    }
-					    if (bp>=${bp_limit}){exit 0}
-					  }
-					' ${reads.join(" ")}
+					fq_subsample.awk -v bp_limit=${bp_limit} ${reads.join(" ")}
 					"""
     		}
     stub:
