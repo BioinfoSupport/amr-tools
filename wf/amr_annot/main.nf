@@ -56,19 +56,19 @@ workflow AMR_ANNOT_ASSEMBLY_FOR_ORG {
 
 		// MLST typing
 		cgemlst_ch = fa_org_ch
-			.filter({!opts.skip_cgemlst})
+			.filter({!opts.skip.cgemlst})
 			.map({meta,fa,org_name -> [meta, fa, tool_args('cgemlst',meta,opts,org_name)]})
 			.filter({meta,fasta,args -> args!=null})
 			| CGEMLST
 		MLST_ch = fa_org_ch
-			.filter({!opts.skip_MLST})
+			.filter({!opts.skip.MLST})
 			.map({meta,fa,org_name -> [meta, fa, tool_args('MLST',meta,opts,org_name)]})
 			.filter({meta,fasta,args -> args!=null})
 			| MLST
 
 		// PROKKA annotations
 		prokka_ch = fa_org_ch
-			.filter({!opts.skip_prokka})
+			.filter({!opts.skip.prokka})
 			.map({meta,fa,org_name -> [meta, fa, tool_args('prokka',meta,opts,org_name)]})
 			.filter({meta,fasta,args -> args!=null})
 			| PROKKA_RUN
@@ -88,13 +88,13 @@ workflow AMR_ANNOT_ASSEMBLY {
 		asm_ch
 	main:
 		// CGE - RESFINDER
-		resfinder_ch = RESFINDER(asm_ch.filter({!opts.skip_resfinder}),'fasta')
+		resfinder_ch = RESFINDER(asm_ch.filter({!opts.skip.resfinder}),'fasta')
 
 		// Plasmid typing
-		plasmidfinder_ch = asm_ch.filter({!opts.skip_plasmidfinder}) | PLASMIDFINDER
+		plasmidfinder_ch = asm_ch.filter({!opts.skip.plasmidfinder}) | PLASMIDFINDER
 		
 		// NCBI AMRfinder+
-		if (opts.skip_amrfinderplus) {
+		if (opts.skip.amrfinderplus) {
 			amrfinderplus_ch = Channel.empty()
 		} else {
 			amrfinderplus_db = AMRFINDERPLUS_UPDATE()
@@ -108,16 +108,16 @@ workflow AMR_ANNOT_ASSEMBLY {
 		
 		// MOBsuite - MOBtyper
 		mobtyper_ch = asm_ch
-			.filter({!opts.skip_mobtyper})
+			.filter({!opts.skip.mobtyper})
 			.map({meta,fasta -> [meta,fasta,tool_args('mobtyper',meta,opts)]})
 			.filter({meta,fasta,args -> args!=null})
       | MOBTYPER_RUN
 
     // Run orgfinder to auto detect organism
-		orgfinder_ch = asm_ch.filter({!opts.skip_orgfinder}) | ORGFINDER_DETECT
+		orgfinder_ch = asm_ch.filter({!opts.skip.orgfinder}) | ORGFINDER_DETECT
 			
 		// Speciator
-		speciator_ch = asm_ch.filter({!opts.skip_speciator}) | SPECIATOR
+		speciator_ch = asm_ch.filter({!opts.skip.speciator}) | SPECIATOR
 
 			
 		// ---------------------------------------------------------------------
@@ -168,9 +168,6 @@ workflow AMR_ANNOT {
 	main:
 		fai_ch = SAMTOOLS_FAIDX(asm_ch)
 		//AMR_ANNOT_ASSEMBLY(opts,asm_ch)
-		
-		println(opts)
-		
 		AMR_ANNOT_READS(opts,fqs_ch,fql_ch)
 		/*
 		MULTIREPORT(

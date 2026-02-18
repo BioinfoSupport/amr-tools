@@ -63,25 +63,37 @@
 					"type": "object",
 					"properties": {
 						"speciator": {
-				      "type": "boolean",
-				      "default": "true"
-				    },
+						  "type": "boolean",
+						  "default": "true"
+						},
+						"plasmidfinder": {
+						  "type": "boolean",
+						  "default": "false"
+						},
+						"amrfinderplus": {
+						  "type": "boolean",
+						  "default": "false"
+						},				    
+						"resfinder": {
+						  "type": "boolean",
+						  "default": "false"
+						},
 						"plasmidfinder_longread": {
-				      "type": "boolean",
-				      "default": "false"
-				    },
+						  "type": "boolean",
+						  "default": "false"
+						},
 						"resfinder_longread": {
-				      "type": "boolean",
-				      "default": "false"
-				    },
+						  "type": "boolean",
+						  "default": "false"
+						},
 						"plasmidfinder_shortread": {
-				      "type": "boolean",
-				      "default": "false"
-				    },
+						  "type": "boolean",
+						  "default": "false"
+						},
 						"resfinder_shortread": {
-				      "type": "boolean",
-				      "default": "false"
-				    }
+						  "type": "boolean",
+						  "default": "false"
+						}
 					}
 				}
 			}
