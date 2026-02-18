@@ -1,10 +1,13 @@
 
-
-include {READS_FILTER}  from './wf/reads_filter/main.nf'
+include {SAMTOOLS_FASTQ}                from './modules/samtools/fastq' 
+include {READS_FILTER}                  from './wf/reads_filter/main.nf'
+include {READS_QC as FILTERED_READS_QC} from './wf/reads_qc/main.nf'
 include {ASSEMBLE}      from './wf/assemble/main.nf'
 include {ASSEMBLIES_QC} from './wf/assemblies_qc/main.nf'
 include {AMR_ANNOT}     from './wf/amr_annot/main.nf'
-
+include {IDENTITY as COPY_ASSEMBLY_FASTA}  from './modules/identity/main.nf'
+include {IDENTITY as COPY_SHORT_READS}     from './modules/identity/main.nf'
+include {IDENTITY as COPY_LONG_READS}      from './modules/identity/main.nf'
 
 // ------------------------------------------------------------------
 // Main entry point when running the pipeline from command line
@@ -26,35 +29,51 @@ workflow {
 		def sr_ch = samples
 				.filter({it.reads_short_1})
 				.map({[it.subMap('sample_id'),[it.reads_short_1,it.short_reads_2].findAll({it})]})
+				| COPY_SHORT_READS
+		
 		def lr_ch = samples
 			.filter({it.reads_long})
 			.map({[it.subMap('sample_id'),it.reads_long]})
+			| COPY_LONG_READS
+
+		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
+		lr_ch = lr_ch.branch({meta,f -> 
+			bam: f.name =~ /\.(bam|cram)$/
+			fq: true
+		})
+		lr_ch = lr_ch.fq.mix(SAMTOOLS_FASTQ(lr_ch.bam))
 
 		// Filter reads
 		READS_FILTER(sr_ch,lr_ch)
+		FILTERED_READS_QC(READS_FILTER.out.short_filtered,READS_FILTER.out.long_filtered)
 		
+		// Run denovo assembly process when 
 		// Determine assemblies that are done and thus that have to be run
 		def asm_ch = samples.branch({
 			done: it.assembly_fasta
 			todo: true
 		})
+		asm_ch.done.map({[it.subMap('sample_id'),it.assembly_fasta]}) 
+		| COPY_ASSEMBLY_FASTA
 		ASSEMBLE(
 				params.assembler.name,
-				sr_ch.join(asm_ch.todo.map({[it.subMap('sample_id')]})),
-				lr_ch.join(asm_ch.todo.map({[it.subMap('sample_id')]}))
+				READS_FILTER.out.short_filtered.join(asm_ch.todo.map({[it.subMap('sample_id')]})),
+				READS_FILTER.out.long_filtered.join(asm_ch.todo.map({[it.subMap('sample_id')]}))
 		)
 		def asm_fa_ch = Channel.empty().mix(
-			//asm_ch.done.map({[it.subMap('sample_id'),[assembler_name:'none'], file(it.assembly_fasta)]}),
-			ASSEMBLE.out.fasta.map({[it[0],[assembler_name:params.assembler.name],it[1]]})
+				COPY_ASSEMBLY_FASTA.out.map({[it[0],[assembler_name:'none'],it[1]]}),
+				ASSEMBLE.out.fasta.map({[it[0],[assembler_name:params.assembler.name],it[1]]})
 		)
 
 		// Finally run AMR annotations
+		/*
 		AMR_ANNOT(
 			params.amr_annot,
 			asm_fa_ch.map({[it[0]+it[1],it[2]]}),
 			asm_fa_ch.join(READS_FILTER.out.short_filtered).map({[it[0]+it[1]?:[:],it[3]]}),
 			asm_fa_ch.join(READS_FILTER.out.long_filtered).map({[it[0]+it[1]?:[:],it[3]]})
 		)
+		*/
 
 //asm_fa_ch.map({ m,m2,x -> "assemblies/${m2.assembler_name}/${m.sample_id}.fasta"}).view()
 
