@@ -28,7 +28,7 @@
 					"format": "file-path-pattern",
 					"exists": true,
 					"pattern": "^\\S+\\.(fastq\\.gz|fq\\.gz)$",
-					"description": "Path to FASTQ.GZ files containing short reads. Pairend-end files are reconized when ending with regex pattern '_(R?[12])(_001)?.(fq|fastq).gz$'"
+					"description": "Path to FASTQ.GZ files containing short reads. Pairend-end files are reconized when ending with regex pattern '_(R?[12])(_[0-9][0-9][0-9])?.(fq|fastq).gz$'"
 				}
 			}
 		},

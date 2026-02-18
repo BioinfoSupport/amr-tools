@@ -46,7 +46,7 @@ class Samples {
 	  	}	  	
 	  	if (opts.reads.short) {
 				sr_ch = Channel.fromFilePairs(opts.reads.short,size:-1) { 
-						file -> file.name.replaceAll(/_(R?[12])(_001)?\.(fq|fastq)\.gz$/, '') 
+						file -> file.name.replaceAll(/_(R?[12])(_[0-9][0-9][0-9])?\.(fq|fastq)\.gz$/, '') 
 				}
 				.map({id,x -> [[sample_id:id],x]})
 	  	}
