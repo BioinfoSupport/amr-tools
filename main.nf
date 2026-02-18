@@ -19,8 +19,10 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-
+		// Parse parameters and get a channel of samples objects
 		def samples = Samples.fromParams(params,{sheet,schema -> samplesheetToList(sheet, schema)})
+		
+		// Extract reads channels from samples channel
 		def sr_ch = samples
 				.filter({it.reads_short_1})
 				.map({[it.subMap('sample_id'),[it.reads_short_1,it.short_reads_2].findAll({it})]})
@@ -28,7 +30,7 @@ workflow {
 			.filter({it.reads_long})
 			.map({[it.subMap('sample_id'),it.reads_long]})
 
-		// First, filter reads
+		// Filter reads
 		READS_FILTER(sr_ch,lr_ch)
 		
 		// Determine assemblies that are done and thus that have to be run
@@ -36,13 +38,11 @@ workflow {
 			done: it.assembly_fasta
 			todo: true
 		})
-		
 		ASSEMBLE(
 				params.assembler.name,
 				sr_ch.join(asm_ch.todo.map({[it.subMap('sample_id')]})),
 				lr_ch.join(asm_ch.todo.map({[it.subMap('sample_id')]}))
 		)
-
 		def asm_fa_ch = Channel.empty().mix(
 			//asm_ch.done.map({[it.subMap('sample_id'),[assembler_name:'none'], file(it.assembly_fasta)]}),
 			ASSEMBLE.out.fasta.map({[it[0],[assembler_name:params.assembler.name],it[1]]})

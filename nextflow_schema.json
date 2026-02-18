@@ -45,6 +45,11 @@
 	      "type": "integer",
 	      "description": "Limit the number input reads to this maximum total length (in bp), -1 to skip",
 	      "default": 500000000
+	    },
+	    "chopper_args": {
+	      "type": "string",
+	      "description": "Parameters to be used for chooper",
+	      "default": "--quality 15 --minlength 200"
 	    }
 		},
 		
