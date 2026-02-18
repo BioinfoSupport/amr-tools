@@ -20,7 +20,6 @@ workflow READS_QC {
 		ORGANIZE_FILES(
 			Channel.empty().mix(
 				NANOPLOT.out.nanostat.map({meta,file -> [file,"${meta.sample_id}.nanostat"]}),
-				//FASTQC.out.zip.map({meta,file -> [file,"${meta.sample_id}_fastqc.zip"]}),
 				FASTP.out.json.map({meta,file -> [file,"${meta.sample_id}.fastp.json"]})
 			)
 			.collect({[it]})

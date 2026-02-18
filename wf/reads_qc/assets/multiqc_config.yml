@@ -3,6 +3,8 @@ title: "Sequencing QC"
 subtitle: ""
 intro_text: ""
 report_comment: "This report gives a set of metrics computed directly on short-reads and long-reads to check the quality of the sequencing"
+use_filename_as_sample_name:
+  - fastp
 
 run_modules:
   - nanostat
