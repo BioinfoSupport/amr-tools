@@ -1,6 +1,5 @@
 
 include { MINIMAP2_ALIGN_ONT } from './modules/minimap2/align_ont'
-include { SAMTOOLS_FASTQ     } from './modules/samtools/fastq'
 include { SAMTOOLS_STATS as SAMTOOLS_STATS_LONG  } from './modules/samtools/stats'
 include { SAMTOOLS_STATS as SAMTOOLS_STATS_SHORT } from './modules/samtools/stats'
 include { BWA_MEM            } from './modules/bwa/mem'
@@ -56,13 +55,6 @@ workflow ASSEMBLIES_QC {
 		fql_ch
 	main:
 	
-		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
-		fql_ch = fql_ch.branch({meta,f -> 
-			bam: f.name =~ /\.(bam|cram)$/
-			fq: true
-		})
-		fql_ch = fql_ch.fq.mix(SAMTOOLS_FASTQ(fql_ch.bam))
-
 		// Short reads alignment and statistics
 		BWA_MEM(BWA_INDEX(fa_ch).join(fqs_ch))
 		SAMTOOLS_STATS_SHORT(BWA_MEM.out.bam)

@@ -61,9 +61,18 @@ workflow {
 				READS_FILTER.out.long_filtered.join(asm_ch.todo.map({[it.subMap('sample_id')]}))
 		)
 		def asm_fa_ch = Channel.empty().mix(
-				COPY_ASSEMBLY_FASTA.out.map({[it[0],[assembler_name:'none'],it[1]]}),
-				ASSEMBLE.out.fasta.map({[it[0],[assembler_name:params.assembler.name],it[1]]})
+				COPY_ASSEMBLY_FASTA.out.map({[[it[0],[assembler_name:'none']],it[1]]}),
+				ASSEMBLE.out.fasta.map({[[it[0],[assembler_name:params.assembler.name]],it[1]]})
 		)
+
+		// Compute assemblies QC stats
+		ASSEMBLIES_QC(
+			asm_fa_ch,
+			READS_FILTER.out.short_filtered.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]}),
+			READS_FILTER.out.long_filtered.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]})
+		)
+
+		
 
 		// Finally run AMR annotations
 		/*
@@ -75,12 +84,12 @@ workflow {
 		)
 		*/
 
-//asm_fa_ch.map({ m,m2,x -> "assemblies/${m2.assembler_name}/${m.sample_id}.fasta"}).view()
-
 	publish:
 		reads_long_filtered = READS_FILTER.out.long_filtered
 		reads_short_filtered = READS_FILTER.out.short_filtered
+		filtered_reads_multiqc_html = FILTERED_READS_QC.out.multiqc_html
 		assemblies_fasta = asm_fa_ch
+		assemblies_multiqc_txt = ASSEMBLIES_QC.out.assembly_multiqc_txt
 		//orgfinder = AMR_ANNOT.out.orgfinder
 }
 
@@ -97,9 +106,17 @@ output {
       }
 		}
 	}
-	assemblies_fasta {
-		path { m,m2,x -> x >> "assemblies/${m2.assembler_name}/${m.sample_id}.fasta"}
+	filtered_reads_multiqc_html {
+		path { x -> x >> "filtered_reads_multiqc.html"}
 	}
+	
+	assemblies_fasta {
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.fasta"}
+	}
+	assemblies_multiqc_txt {
+		path { x -> x >> "assemblies_multiqc.txt"}
+	}
+	
 /*
 	orgfinder {
 		path { m,x -> x >> "assemblies/${m.assembler_name}/${m.sample_id}/orgfinder"}
