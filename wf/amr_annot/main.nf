@@ -87,12 +87,13 @@ workflow AMR_ANNOT_ASSEMBLY {
 		opts
 		asm_ch
 	main:
+
 		// CGE - RESFINDER
 		resfinder_ch = RESFINDER(asm_ch.filter({!opts.skip.resfinder}),'fasta')
 
 		// Plasmid typing
 		plasmidfinder_ch = asm_ch.filter({!opts.skip.plasmidfinder}) | PLASMIDFINDER
-		
+/*		
 		// NCBI AMRfinder+
 		if (opts.skip.amrfinderplus) {
 			amrfinderplus_ch = Channel.empty()
@@ -112,10 +113,10 @@ workflow AMR_ANNOT_ASSEMBLY {
 			.map({meta,fasta -> [meta,fasta,tool_args('mobtyper',meta,opts)]})
 			.filter({meta,fasta,args -> args!=null})
       | MOBTYPER_RUN
-
+*/
     // Run orgfinder to auto detect organism
 		orgfinder_ch = asm_ch.filter({!opts.skip.orgfinder}) | ORGFINDER_DETECT
-			
+
 		// Speciator
 		speciator_ch = asm_ch.filter({!opts.skip.speciator}) | SPECIATOR
 
@@ -123,18 +124,18 @@ workflow AMR_ANNOT_ASSEMBLY {
 		// ---------------------------------------------------------------------
 		// Organism specific tools
 		// ---------------------------------------------------------------------
-		ann_ch = AMR_ANNOT_ASSEMBLY_FOR_ORG(opts,asm_ch,orgfinder_ch.org_name)
+		//ann_ch = AMR_ANNOT_ASSEMBLY_FOR_ORG(opts,asm_ch,orgfinder_ch.org_name)
 
 	emit:
-			orgfinder           = orgfinder_ch.orgfinder
-			amrfinderplus       = amrfinderplus_ch
-			resfinder           = resfinder_ch
-			mobtyper            = mobtyper_ch
-			plasmidfinder       = plasmidfinder_ch
-			org_name            = ann_ch.org_name			
-			cgemlst             = ann_ch.cgemlst
-			MLST                = ann_ch.MLST
-			prokka              = ann_ch.prokka
+			orgfinder           = Channel.empty() //orgfinder_ch.orgfinder
+			amrfinderplus       = Channel.empty() //amrfinderplus_ch
+			resfinder           = Channel.empty() //resfinder_ch
+			mobtyper            = Channel.empty() //mobtyper_ch
+			plasmidfinder       = Channel.empty() //plasmidfinder_ch
+			org_name            = Channel.empty() //ann_ch.org_name			
+			cgemlst             = Channel.empty() //ann_ch.cgemlst
+			MLST                = Channel.empty() //ann_ch.MLST
+			prokka              = Channel.empty() //ann_ch.prokka
 }
 
 
@@ -167,7 +168,7 @@ workflow AMR_ANNOT {
 		fql_ch
 	main:
 		fai_ch = SAMTOOLS_FAIDX(asm_ch)
-		//AMR_ANNOT_ASSEMBLY(opts,asm_ch)
+		AMR_ANNOT_ASSEMBLY(opts,asm_ch)
 		AMR_ANNOT_READS(opts,fqs_ch,fql_ch)
 		/*
 		MULTIREPORT(
@@ -189,14 +190,14 @@ workflow AMR_ANNOT {
 		)
 		*/
 	emit:
-			orgfinder           = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.orgfinder
-			amrfinderplus       = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.amrfinderplus
-			resfinder           = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.resfinder
-			mobtyper            = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.mobtyper
-			plasmidfinder       = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.plasmidfinder
-			cgemlst             = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.cgemlst
-			MLST                = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.MLST
-			prokka              = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.prokka
+			orgfinder           = AMR_ANNOT_ASSEMBLY.out.orgfinder
+			amrfinderplus       = AMR_ANNOT_ASSEMBLY.out.amrfinderplus
+			resfinder           = AMR_ANNOT_ASSEMBLY.out.resfinder
+			mobtyper            = AMR_ANNOT_ASSEMBLY.out.mobtyper
+			plasmidfinder       = AMR_ANNOT_ASSEMBLY.out.plasmidfinder
+			cgemlst             = AMR_ANNOT_ASSEMBLY.out.cgemlst
+			MLST                = AMR_ANNOT_ASSEMBLY.out.MLST
+			prokka              = AMR_ANNOT_ASSEMBLY.out.prokka
 			resfinder_long      = AMR_ANNOT_READS.out.resfinder_long
 			resfinder_short     = AMR_ANNOT_READS.out.resfinder_short
 			plasmidfinder_long  = AMR_ANNOT_READS.out.plasmidfinder_long
