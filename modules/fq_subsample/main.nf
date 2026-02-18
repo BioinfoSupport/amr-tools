@@ -14,15 +14,26 @@ process FQ_SUBSAMPLE {
     		if (bp_limit<0) {
     			reads.withIndex().collect({x,i -> "ln -s '${x}' 'subsampled_reads_${i+1}.fastq.gz'"}).join("\n")
     		} else {
-    			//TODO: When pair-end reads are given, we should sum reads length of all pairs and stop when limit is reached
-    			reads.withIndex().collect({x,i -> """
-							# Set this option because awk can exit and break the pipe
-							set +o pipefail
-							bgzip -dc '${x}' \\
-							| awk 'NR%4==2{bp+=length(\$0)} {print} ((bp>=${bp_limit}) && (NR%4==0)){exit 0}' \\
-							| bgzip -@ ${task.cpus} \\
-							> 'subsampled_reads_${i+1}.fastq.gz'
-    			"""}).join("\n")
+					"""
+					set +o pipefail
+					awk '
+						BEGIN{bp=0;for(i=1;i<length(ARGV);i++){print ARGV[i]}}
+						{for(i=1;i<length(ARGV);i++){"gzip -dc " ARGV[i] | getline line[i "_" NR%4]}}
+						NR%4==0 {
+					    for(i=1;i<length(ARGV);i++) {
+					      if (line[i "_" 1]!~/^@/) {print "Expected @ at line " NR " of file " ARGV[i] > "/dev/stderr";exit 1}
+					      if (line[i "_" 3]!~/^[+]/) {print "Expected + at line " NR " of file " ARGV[i] > "/dev/stderr";exit 1}
+					      bp += length(line[i "_" 2])
+					      ocmd = "gzip > subsampled_reads_" i ".fastq.gz"
+					      print line[i "_" 1] | ocmd
+					      print line[i "_" 2] | ocmd
+					      print line[i "_" 3] | ocmd
+					      print line[i "_" 0] | ocmd
+					    }
+					    if (bp>=${bp_limit}){exit 0}
+					  }
+					' ${reads.join("\\n")}
+					"""
     		}
     stub:
     	reads.withIndex().collect({x,i -> "touch 'subsampled_reads_${i+1}.fastq.gz'"}).join("\n")
