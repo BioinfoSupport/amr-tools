@@ -19,9 +19,9 @@ workflow READS_QC {
 		// MultiQC
 		ORGANIZE_FILES(
 			Channel.empty().mix(
-				NANOPLOT.out.nanostat.map({meta,file -> [file,"${meta.sample_id}_${meta.readset_id}.nanostat"]}),
-				//FASTQC.out.zip.map({meta,file -> [file,"${meta.sample_id}_${meta.readset_id}_fastqc.zip"]}),
-				FASTP.out.json.map({meta,file -> [file,"${meta.sample_id}_${meta.readset_id}.fastp.json"]})
+				NANOPLOT.out.nanostat.map({meta,file -> [file,"${meta.sample_id}.nanostat"]}),
+				//FASTQC.out.zip.map({meta,file -> [file,"${meta.sample_id}_fastqc.zip"]}),
+				FASTP.out.json.map({meta,file -> [file,"${meta.sample_id}.fastp.json"]})
 			)
 			.collect({[it]})
 			.map({["multiqc.html",it]})
