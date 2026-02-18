@@ -55,13 +55,35 @@
 			}
 		},
 		
-		"amr_annot": {
+		"amr": {
 			"title": "Parameters for tool amr annotation",
 			"type": "object",
 			"properties": {
-		    "force_org": {
-		      "type": "string"
-		    }
+				"skip": {
+					"type": "object",
+					"properties": {
+						"speciator": {
+				      "type": "boolean",
+				      "default": "true"
+				    },
+						"plasmidfinder_longread": {
+				      "type": "boolean",
+				      "default": "false"
+				    },
+						"resfinder_longread": {
+				      "type": "boolean",
+				      "default": "false"
+				    },
+						"plasmidfinder_shortread": {
+				      "type": "boolean",
+				      "default": "false"
+				    },
+						"resfinder_shortread": {
+				      "type": "boolean",
+				      "default": "false"
+				    }
+					}
+				}
 			}
 		},
 				

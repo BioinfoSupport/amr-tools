@@ -145,10 +145,10 @@ workflow AMR_ANNOT_READS {
 		fqs_ch
 		fql_ch
 	main:
-		PLASMIDFINDER_LONGREAD(fql_ch.filter({!opts.skip_plasmidfinder_longread}))
-		RESFINDER_LONGREAD(fql_ch.filter({!opts.skip_resfinder_longread}),'nanopore')
-		PLASMIDFINDER_SHORTREAD(fqs_ch.filter({!opts.skip_plasmidfinder_shortread}))
-		RESFINDER_SHORTREAD(fql_ch.filter({!opts.skip_resfinder_shortread}),'illumina')
+		PLASMIDFINDER_LONGREAD(fql_ch.filter({!opts.skip.plasmidfinder_longread}))
+		RESFINDER_LONGREAD(fql_ch.filter({!opts.skip.resfinder_longread}),'nanopore')
+		PLASMIDFINDER_SHORTREAD(fqs_ch.filter({!opts.skip.plasmidfinder_shortread}))
+		RESFINDER_SHORTREAD(fql_ch.filter({!opts.skip.resfinder_shortread}),'illumina')
 	emit:
 			resfinder_long      = RESFINDER_LONGREAD.out
 			resfinder_short     = RESFINDER_SHORTREAD.out
@@ -167,8 +167,12 @@ workflow AMR_ANNOT {
 		fql_ch
 	main:
 		fai_ch = SAMTOOLS_FAIDX(asm_ch)
-		AMR_ANNOT_ASSEMBLY(opts,asm_ch)
+		//AMR_ANNOT_ASSEMBLY(opts,asm_ch)
+		
+		println(opts)
+		
 		AMR_ANNOT_READS(opts,fqs_ch,fql_ch)
+		/*
 		MULTIREPORT(
 			asm_ch,
 			fai_ch,
@@ -186,24 +190,24 @@ workflow AMR_ANNOT {
 			AMR_ANNOT_READS.out.resfinder_short,
 			AMR_ANNOT_READS.out.plasmidfinder_short
 		)
-		
+		*/
 	emit:
-			orgfinder           = AMR_ANNOT_ASSEMBLY.out.orgfinder
-			amrfinderplus       = AMR_ANNOT_ASSEMBLY.out.amrfinderplus
-			resfinder           = AMR_ANNOT_ASSEMBLY.out.resfinder
-			mobtyper            = AMR_ANNOT_ASSEMBLY.out.mobtyper
-			plasmidfinder       = AMR_ANNOT_ASSEMBLY.out.plasmidfinder
-			cgemlst             = AMR_ANNOT_ASSEMBLY.out.cgemlst
-			MLST                = AMR_ANNOT_ASSEMBLY.out.MLST
-			prokka              = AMR_ANNOT_ASSEMBLY.out.prokka
+			orgfinder           = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.orgfinder
+			amrfinderplus       = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.amrfinderplus
+			resfinder           = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.resfinder
+			mobtyper            = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.mobtyper
+			plasmidfinder       = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.plasmidfinder
+			cgemlst             = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.cgemlst
+			MLST                = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.MLST
+			prokka              = Channel.empty() //AMR_ANNOT_ASSEMBLY.out.prokka
 			resfinder_long      = AMR_ANNOT_READS.out.resfinder_long
 			resfinder_short     = AMR_ANNOT_READS.out.resfinder_short
 			plasmidfinder_long  = AMR_ANNOT_READS.out.plasmidfinder_long
 			plasmidfinder_short = AMR_ANNOT_READS.out.plasmidfinder_short
 			
-	    multireport_folder = MULTIREPORT.out.folder
-    	multireport_html   = MULTIREPORT.out.html.map({m,x -> x})
-    	multireport_xlsx   = MULTIREPORT.out.xlsx.map({m,x -> x})
+	    multireport_folder = Channel.empty() //MULTIREPORT.out.folder
+    	multireport_html   = Channel.empty() //MULTIREPORT.out.html.map({m,x -> x})
+    	multireport_xlsx   = Channel.empty() //MULTIREPORT.out.xlsx.map({m,x -> x})
 }
 
 

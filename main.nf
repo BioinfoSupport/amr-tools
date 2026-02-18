@@ -75,14 +75,12 @@ workflow {
 		
 
 		// Finally run AMR annotations
-	/*	
 		AMR_ANNOT(
-			params.amr_annot,
+			params.amr,
 			asm_fa_ch,
 			READS_FILTER.out.short_filtered.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]}),
 			READS_FILTER.out.long_filtered.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]})
 		)
-	*/	
 
 	publish:
 		reads_long_filtered = READS_FILTER.out.long_filtered
