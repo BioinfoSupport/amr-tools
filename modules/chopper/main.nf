@@ -12,7 +12,7 @@ process CHOPPER {
 	    chopper ${task.ext.args?:'--quality 15 --minlength 200'} \\
 	        --input reads.fastq.gz \\
 	        --threads ${task.cpus} \\
-	    | bgzip -@ ${task.cpus} \\
+	    | gzip --fast \\
 	    > chopped_reads.fastq.gz
 	    """
     stub:
