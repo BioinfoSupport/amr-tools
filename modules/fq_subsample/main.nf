@@ -32,7 +32,7 @@ process FQ_SUBSAMPLE {
 					    }
 					    if (bp>=${bp_limit}){exit 0}
 					  }
-					' ${reads.join("\\n")}
+					' ${reads.join(" ")}
 					"""
     		}
     stub:

@@ -9,6 +9,7 @@ process FASTP {
 	    tuple val(meta), path('output.fastp.json'), emit: json
 	    tuple val(meta), path('output.fastp.html'), emit: html
     script:
+    	reads = reads instanceof List?reads:[reads]
     	if (reads[1]==null) {
 		    """
 		    fastp \\

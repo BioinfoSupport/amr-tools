@@ -28,7 +28,7 @@ workflow {
 		// Extract reads channels from samples channel
 		def sr_ch = samples
 				.filter({it.reads_short_1})
-				.map({[it.subMap('sample_id'),[it.reads_short_1,it.short_reads_2].findAll({it})]})
+				.map({[it.subMap('sample_id'),[it.reads_short_1,it.reads_short_2].findAll({it})]})
 				| COPY_SHORT_READS
 		
 		def lr_ch = samples

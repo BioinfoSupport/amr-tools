@@ -44,7 +44,7 @@
 	    "short_limit": {
 	      "type": "integer",
 	      "description": "Limit the number input reads to this maximum total length (in bp), -1 to skip",
-	      "default": 500000000
+	      "default": 1000000000
 	    },
 	    "chopper_args": {
 	      "type": "string",
