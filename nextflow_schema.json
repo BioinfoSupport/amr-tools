@@ -62,6 +62,10 @@
 				"skip": {
 					"type": "object",
 					"properties": {
+						"orgfinder": {
+						  "type": "boolean",
+						  "default": "false"
+						},
 						"speciator": {
 						  "type": "boolean",
 						  "default": "true"
