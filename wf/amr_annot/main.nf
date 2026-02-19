@@ -11,10 +11,10 @@ include { ORGFINDER_DETECT                         } from './modules/orgfinder/d
 include { SPECIATOR                                } from './modules/speciator'
 include { AMRFINDERPLUS_UPDATE                     } from './modules/amrfinderplus/update'
 include { AMRFINDERPLUS_RUN                        } from './modules/amrfinderplus/run'
-include { PROKKA_RUN                               } from './modules/tseemann/prokka'
+include { PROKKA                                   } from './modules/tseemann/prokka'
 include { MLST                                     } from './modules/tseemann/mlst'
 include { MLST as CGEMLST                          } from './modules/cgetools/mlst'
-include { MOBTYPER_RUN                             } from './modules/mobsuite/mobtyper.nf'
+include { MOBTYPER                                 } from './modules/mobsuite/mobtyper.nf'
 include { SAMTOOLS_FAIDX                           } from './modules/samtools/faidx'
 include { MULTIREPORT                              } from './subworkflows/multireport'
 
@@ -60,23 +60,9 @@ workflow AMR_ANNOT_ASSEMBLY_FOR_ORG {
 			.map({meta,fa,org_name -> [meta, fa, tool_args('cgemlst',meta,opts,org_name)]})
 			.filter({meta,fasta,args -> args!=null})
 			| CGEMLST
-		MLST_ch = fa_org_ch
-			.filter({!opts.skip.MLST})
-			.map({meta,fa,org_name -> [meta, fa, tool_args('MLST',meta,opts,org_name)]})
-			.filter({meta,fasta,args -> args!=null})
-			| MLST
-
-		// PROKKA annotations
-		prokka_ch = fa_org_ch
-			.filter({!opts.skip.prokka})
-			.map({meta,fa,org_name -> [meta, fa, tool_args('prokka',meta,opts,org_name)]})
-			.filter({meta,fasta,args -> args!=null})
-			| PROKKA_RUN
 
 	emit:
 		cgemlst = cgemlst_ch
-		MLST = MLST_ch
-		prokka = prokka_ch
 		org_name = fa_org_ch.map({meta,fa,org_name -> [meta,org_name]})
 }
 
@@ -98,29 +84,37 @@ workflow AMR_ANNOT_ASSEMBLY {
 		def amrfinderplus_ch = Channel.empty()
 		if (!opts.skip.amrfinderplus) {
 			def amrfinderplus_db = AMRFINDERPLUS_UPDATE()
-/*
-			amrfinderplus_ch = AMRFINDERPLUS_RUN(
-					asm_ch
-						.map({meta,fasta -> [meta,fasta,tool_args('amrfinderplus',meta,opts)]})
-						.filter({meta,fasta,args -> args!=null}),
-					amrfinderplus_db
-			)
-*/			
+			amrfinderplus_ch = AMRFINDERPLUS_RUN(asm_ch,amrfinderplus_db)
 		}
-/*
+
 		// MOBsuite - MOBtyper
-		mobtyper_ch = asm_ch
-			.filter({!opts.skip.mobtyper})
-			.map({meta,fasta -> [meta,fasta,tool_args('mobtyper',meta,opts)]})
-			.filter({meta,fasta,args -> args!=null})
-      | MOBTYPER_RUN
-*/
-    // Run orgfinder to auto detect organism
-		orgfinder_ch = asm_ch.filter({!opts.skip.orgfinder}) | ORGFINDER_DETECT
+		def mobtyper_ch = Channel.empty()
+		if (!opts.skip.mobtyper) {
+			mobtyper_ch = asm_ch | MOBTYPER
+		}
+
+		// PROKKA annotations
+		def prokka_ch = Channel.empty()
+		if (!opts.skip.prokka) {
+			prokka_ch = asm_ch | PROKKA
+		}
 
 		// Speciator
-		speciator_ch = asm_ch.filter({!opts.skip.speciator}) | SPECIATOR
+		def speciator_ch = Channel.empty()
+		if (!opts.skip.speciator) {
+			speciator_ch = asm_ch | SPECIATOR	
+		}
+		
+		def MLST_ch = Channel.empty()
+		if (!opts.skip.MLST) {
+			MLST_ch = asm_ch | MLST
+		}
 
+    // Run orgfinder to auto detect organism
+    def orgfinder_dir_ch = Channel.empty()
+    if (!opts.skip.orgfinder) {
+    	orgfinder_dir_ch = ORGFINDER_DETECT(asm_ch).orgfinder	
+    }
 			
 		// ---------------------------------------------------------------------
 		// Organism specific tools
@@ -128,15 +122,16 @@ workflow AMR_ANNOT_ASSEMBLY {
 		//ann_ch = AMR_ANNOT_ASSEMBLY_FOR_ORG(opts,asm_ch,orgfinder_ch.org_name)
 
 	emit:
-			orgfinder           = orgfinder_ch.orgfinder
-			amrfinderplus       = Channel.empty() //amrfinderplus_ch
+			orgfinder           = orgfinder_dir_ch
+			amrfinderplus       = amrfinderplus_ch
 			resfinder           = resfinder_ch
-			mobtyper            = Channel.empty() //mobtyper_ch
+			mobtyper            = mobtyper_ch
 			plasmidfinder       = plasmidfinder_ch
+			prokka              = prokka_ch
 			org_name            = Channel.empty() //ann_ch.org_name			
 			cgemlst             = Channel.empty() //ann_ch.cgemlst
-			MLST                = Channel.empty() //ann_ch.MLST
-			prokka              = Channel.empty() //ann_ch.prokka
+			MLST                = MLST_ch
+			
 }
 
 

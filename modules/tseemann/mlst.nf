@@ -4,12 +4,12 @@ process MLST {
     cpus 1
     time '30 min'
     input:
-        tuple val(meta), path("assembly.fasta"), val(args)
+        tuple val(meta), path("assembly.fasta")
     output:
     		tuple val(meta), path("MLST.txt")
     script:
 		    """
-		    mlst --threads=${task.cpus} ${task.ext.args?:''} ${args} assembly.fasta > MLST.txt
+		    mlst --threads=${task.cpus} ${task.ext.args?:''} assembly.fasta > MLST.txt
 		    """
 }
 

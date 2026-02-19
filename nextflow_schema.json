@@ -70,6 +70,10 @@
 						  "type": "boolean",
 						  "default": "true"
 						},
+						"prokka": {
+						  "type": "boolean",
+						  "default": "true"
+						},						
 						"plasmidfinder": {
 						  "type": "boolean",
 						  "default": "false"
@@ -99,7 +103,33 @@
 						  "default": "false"
 						}
 					}
+				},
+				
+				"args": {
+					"type": "object",
+					"properties": {
+						"prokka": {
+						  "type": "string",
+						  "default": "--kingdom Bacteria"
+						},
+						"mobtyper": {
+						  "type": "string"
+						},
+						"plasmidfinder": {
+						  "type": "string"
+						},
+						"MLST": {
+						  "type": "string"
+						},
+						"amrfinderplus": {
+						  "type": "string"
+						},
+						"resfinder": {
+						  "type": "string"
+						}
+					}
 				}
+				
 			}
 		},
 				
@@ -130,7 +160,8 @@
 							"type": "string"
 						},
 						"medaka": {
-							"type": "string"
+							"type": "string",
+							"default": "--bacteria"
 						},
 						"spades": {
 							"type": "string"
