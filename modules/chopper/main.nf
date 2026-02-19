@@ -1,6 +1,6 @@
 process CHOPPER {
     container 'quay.io/biocontainers/chopper:0.12.0--hcdda2d0_0'
-    memory '4 GB'
+    memory '8 GB'
     cpus 4
     time '30 min'
     input:

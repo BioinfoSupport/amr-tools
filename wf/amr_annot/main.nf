@@ -33,8 +33,8 @@ def org_name(meta,opts) {
 def tool_args(tool_name,meta,opts,org_name=null) {
 	def key = tool_name + "_args"
 	def default_args_key = 'default_' + key
-	if (opts.containsKey(key)) return opts[key]
-  if (meta.containsKey(key)) return meta[key]
+	if (opts.defaults.containsKey(key)) return opts[key]
+  if (meta[1].containsKey(key)) return meta[key]
   if (org_name==null) return opts[default_args_key]
   def org_args = defaultOrgArgs.containsKey(org_name)?defaultOrgArgs[org_name] : [:]
   if (org_args.containsKey(key)) return org_args[key]
@@ -89,24 +89,25 @@ workflow AMR_ANNOT_ASSEMBLY {
 	main:
 
 		// CGE - RESFINDER
-		resfinder_ch = RESFINDER(asm_ch.filter({!opts.skip.resfinder}),'fasta')
+		def resfinder_ch = RESFINDER(asm_ch.filter({!opts.skip.resfinder}),'fasta')
 
 		// Plasmid typing
-		plasmidfinder_ch = asm_ch.filter({!opts.skip.plasmidfinder}) | PLASMIDFINDER
-/*		
+		def plasmidfinder_ch = asm_ch.filter({!opts.skip.plasmidfinder}) | PLASMIDFINDER
+
 		// NCBI AMRfinder+
-		if (opts.skip.amrfinderplus) {
-			amrfinderplus_ch = Channel.empty()
-		} else {
-			amrfinderplus_db = AMRFINDERPLUS_UPDATE()
+		def amrfinderplus_ch = Channel.empty()
+		if (!opts.skip.amrfinderplus) {
+			def amrfinderplus_db = AMRFINDERPLUS_UPDATE()
+/*
 			amrfinderplus_ch = AMRFINDERPLUS_RUN(
 					asm_ch
 						.map({meta,fasta -> [meta,fasta,tool_args('amrfinderplus',meta,opts)]})
 						.filter({meta,fasta,args -> args!=null}),
 					amrfinderplus_db
 			)
+*/			
 		}
-		
+/*
 		// MOBsuite - MOBtyper
 		mobtyper_ch = asm_ch
 			.filter({!opts.skip.mobtyper})
@@ -127,11 +128,11 @@ workflow AMR_ANNOT_ASSEMBLY {
 		//ann_ch = AMR_ANNOT_ASSEMBLY_FOR_ORG(opts,asm_ch,orgfinder_ch.org_name)
 
 	emit:
-			orgfinder           = Channel.empty() //orgfinder_ch.orgfinder
+			orgfinder           = orgfinder_ch.orgfinder
 			amrfinderplus       = Channel.empty() //amrfinderplus_ch
-			resfinder           = Channel.empty() //resfinder_ch
+			resfinder           = resfinder_ch
 			mobtyper            = Channel.empty() //mobtyper_ch
-			plasmidfinder       = Channel.empty() //plasmidfinder_ch
+			plasmidfinder       = plasmidfinder_ch
 			org_name            = Channel.empty() //ann_ch.org_name			
 			cgemlst             = Channel.empty() //ann_ch.cgemlst
 			MLST                = Channel.empty() //ann_ch.MLST
