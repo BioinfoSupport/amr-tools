@@ -96,7 +96,12 @@ workflow {
 		plasmidfinder       = AMR_ANNOT.out.plasmidfinder
 		plasmidfinder_long  = AMR_ANNOT.out.plasmidfinder_long
 		plasmidfinder_short = AMR_ANNOT.out.plasmidfinder_short
+		amrfinderplus       = AMR_ANNOT.out.amrfinderplus
+		mobtyper            = AMR_ANNOT.out.mobtyper
+		MLST                = AMR_ANNOT.out.MLST
+		prokka              = AMR_ANNOT.out.prokka
 		
+		//cgemlst             = AMR_ANNOT.out.cgemlst
 		//orgfinder = AMR_ANNOT.out.orgfinder
 }
 
@@ -133,7 +138,6 @@ output {
 	resfinder_short {
 		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/resfinder_short"}
 	}
-	
 	plasmidfinder {
 		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/plasmidfinder"}
 	}
@@ -143,6 +147,19 @@ output {
 	plasmidfinder_short {
 		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/plasmidfinder_short"}
 	}
+	amrfinderplus {
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/amrfinderplus"}
+	}
+	mobtyper {
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/mobtyper"}
+	}
+	MLST {
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/MLST"}
+	}
+	prokka {
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/prokka"}
+	}
+
 
 /*
 	orgfinder {

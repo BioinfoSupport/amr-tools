@@ -145,7 +145,7 @@ workflow AMR_ANNOT_READS {
 		PLASMIDFINDER_LONGREAD(fql_ch.filter({!opts.skip.plasmidfinder_longread}))
 		RESFINDER_LONGREAD(fql_ch.filter({!opts.skip.resfinder_longread}),'nanopore')
 		PLASMIDFINDER_SHORTREAD(fqs_ch.filter({!opts.skip.plasmidfinder_shortread}))
-		RESFINDER_SHORTREAD(fql_ch.filter({!opts.skip.resfinder_shortread}),'illumina')
+		RESFINDER_SHORTREAD(fqs_ch.filter({!opts.skip.resfinder_shortread}),'illumina')
 	emit:
 			resfinder_long      = RESFINDER_LONGREAD.out
 			resfinder_short     = RESFINDER_SHORTREAD.out
