@@ -86,8 +86,17 @@ workflow {
 		reads_long_filtered = READS_FILTER.out.long_filtered
 		reads_short_filtered = READS_FILTER.out.short_filtered
 		filtered_reads_multiqc_html = FILTERED_READS_QC.out.multiqc_html
+		
 		assemblies_fasta = asm_fa_ch
 		assemblies_multiqc_txt = ASSEMBLIES_QC.out.assembly_multiqc_txt
+		
+		resfinder           = AMR_ANNOT.out.resfinder
+		resfinder_long      = AMR_ANNOT.out.resfinder_long
+		resfinder_short     = AMR_ANNOT.out.resfinder_short
+		plasmidfinder       = AMR_ANNOT.out.plasmidfinder
+		plasmidfinder_long  = AMR_ANNOT.out.plasmidfinder_long
+		plasmidfinder_short = AMR_ANNOT.out.plasmidfinder_short
+		
 		//orgfinder = AMR_ANNOT.out.orgfinder
 }
 
@@ -115,6 +124,26 @@ output {
 		path { x -> x >> "assemblies_multiqc.txt"}
 	}
 	
+	resfinder {
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/resfinder"}
+	}
+	resfinder_long {
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/resfinder_long"}
+	}
+	resfinder_short {
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/resfinder_short"}
+	}
+	
+	plasmidfinder {
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/plasmidfinder"}
+	}
+	plasmidfinder_long {
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/plasmidfinder_long"}
+	}
+	plasmidfinder_short {
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/plasmidfinder_short"}
+	}
+
 /*
 	orgfinder {
 		path { m,x -> x >> "assemblies/${m.assembler_name}/${m.sample_id}/orgfinder"}
