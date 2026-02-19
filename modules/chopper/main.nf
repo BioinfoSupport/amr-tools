@@ -1,8 +1,8 @@
 process CHOPPER {
     container 'quay.io/biocontainers/chopper:0.12.0--hcdda2d0_0'
     memory '4 GB'
-    cpus 4
-    time '30 min'
+    cpus 1
+    time '1 h'
     input:
 	    tuple val(meta), path('reads.fastq.gz')
     output:
