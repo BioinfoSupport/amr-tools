@@ -100,9 +100,8 @@ workflow {
 		mobtyper            = AMR_ANNOT.out.mobtyper
 		MLST                = AMR_ANNOT.out.MLST
 		prokka              = AMR_ANNOT.out.prokka
-		
-		//cgemlst             = AMR_ANNOT.out.cgemlst
-		//orgfinder = AMR_ANNOT.out.orgfinder
+		cgemlst             = AMR_ANNOT.out.cgemlst
+		orgfinder           = AMR_ANNOT.out.orgfinder
 }
 
 output {
@@ -159,13 +158,12 @@ output {
 	prokka {
 		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/prokka"}
 	}
-
-
-/*
 	orgfinder {
-		path { m,x -> x >> "assemblies/${m.assembler_name}/${m.sample_id}/orgfinder"}
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/orgfinder"}
 	}
-*/
+	cgemlst {
+		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/cgemlst"}
+	}
 }
 
 

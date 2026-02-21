@@ -50,21 +50,21 @@ workflow MULTIREPORT {
 	main:
 		ORGANIZE_FILES(
 			Channel.empty().mix(
-				fa.map(           {meta,file -> [file,"samples/${meta.sample_id}/assemblies/${meta.assembly_name}/assembly.fasta"]}),
-				fai.map(          {meta,file -> [file,"samples/${meta.sample_id}/assemblies/${meta.assembly_name}/assembly.fasta.fai"]}),
-				org_name.map(     {meta,val  -> [val,"samples/${meta.sample_id}/assemblies/${meta.assembly_name}/org_name.txt"]}),
-				orgfinder.map(    {meta,file -> [file,"samples/${meta.sample_id}/assemblies/${meta.assembly_name}/${file.name}"]}),
-				amrfinderplus.map({meta,file -> [file,"samples/${meta.sample_id}/assemblies/${meta.assembly_name}/${file.name}"]}),
-				resfinder.map(    {meta,file -> [file,"samples/${meta.sample_id}/assemblies/${meta.assembly_name}/${file.name}"]}),
-				plasmidfinder.map({meta,file -> [file,"samples/${meta.sample_id}/assemblies/${meta.assembly_name}/${file.name}"]}),
-				cgemlst.map(      {meta,file -> [file,"samples/${meta.sample_id}/assemblies/${meta.assembly_name}/${file.name}"]}),
-				mobtyper.map(     {meta,file -> [file,"samples/${meta.sample_id}/assemblies/${meta.assembly_name}/${file.name}"]}),
-				MLST.map(         {meta,file -> [file,"samples/${meta.sample_id}/assemblies/${meta.assembly_name}/${file.name}"]}),
-				prokka.map(       {meta,file -> [file,"samples/${meta.sample_id}/assemblies/${meta.assembly_name}/${file.name}"]}),
-				long_resfinder.map(     {meta,file -> [file,"samples/${meta.sample_id}/long_reads/${file.name}"]}),
-				long_plasmidfinder.map( {meta,file -> [file,"samples/${meta.sample_id}/long_reads/${file.name}"]}),
-				short_resfinder.map(    {meta,file -> [file,"samples/${meta.sample_id}/short_reads/${file.name}"]}),
-				short_plasmidfinder.map({meta,file -> [file,"samples/${meta.sample_id}/short_reads/${file.name}"]})
+				fa.map(           {meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/assembly.fasta"]}),
+				fai.map(          {meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/assembly.fasta.fai"]}),
+				org_name.map(     {meta,val  -> [val,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/org_name.txt"]}),
+				orgfinder.map(    {meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/${file.name}"]}),
+				amrfinderplus.map({meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/${file.name}"]}),
+				resfinder.map(    {meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/${file.name}"]}),
+				plasmidfinder.map({meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/${file.name}"]}),
+				cgemlst.map(      {meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/${file.name}"]}),
+				mobtyper.map(     {meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/${file.name}"]}),
+				MLST.map(         {meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/${file.name}"]}),
+				prokka.map(       {meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/${file.name}"]}),
+				long_resfinder.map(     {meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/long_resfinder"]}),
+				long_plasmidfinder.map( {meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/long_plasmidfinder"]}),
+				short_resfinder.map(    {meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/short_resfinder"]}),
+				short_plasmidfinder.map({meta,file -> [file,"assemblies/${meta[1].assembly_name}/${meta[0].sample_id}/short_plasmidfinder"]})
 			)
 			.collect({[it]})
 			.map({["aggregated_folder",it]})

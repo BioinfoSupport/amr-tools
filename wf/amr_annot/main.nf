@@ -20,52 +20,7 @@ include { MULTIREPORT                              } from './subworkflows/multir
 
 
 
-defaultOrgArgs = new groovy.json.JsonSlurper().parseText(file("${moduleDir}/assets/default_org_args.json").text)
-
-// Get name of the organism to use for given sample
-def org_name(meta,opts) {
-	if (opts.org_name!=null) return opts.org_name
-  if (meta.containsKey('org_name')) return meta['org_name']
-	return null
-}
-
-// Retreive arguments to use for the given tool on the given sample
-def tool_args(tool_name,meta,opts,org_name=null) {
-	def key = tool_name + "_args"
-	def default_args_key = 'default_' + key
-	if (opts.defaults.containsKey(key)) return opts[key]
-  if (meta[1].containsKey(key)) return meta[key]
-  if (org_name==null) return opts[default_args_key]
-  def org_args = defaultOrgArgs.containsKey(org_name)?defaultOrgArgs[org_name] : [:]
-  if (org_args.containsKey(key)) return org_args[key]
-  return opts[default_args_key]
-}
-
-
-
-workflow AMR_ANNOT_ASSEMBLY_FOR_ORG {
-	take:
-		opts
-		fa_ch                // channel: [ val(meta), path(assembly_fna) ]
-		detected_orgname_ch  // channel: [ val(meta), val(orgname) ]
-	main:
-		// Update fa_ch with appropriate org_name
-		fa_org_ch = fa_ch
-			.join(detected_orgname_ch,remainder:true)
-			.map({meta,fa,detected_org_name -> [meta,fa,org_name(meta,opts)?:detected_org_name]})
-
-		// MLST typing
-		cgemlst_ch = fa_org_ch
-			.filter({!opts.skip.cgemlst})
-			.map({meta,fa,org_name -> [meta, fa, tool_args('cgemlst',meta,opts,org_name)]})
-			.filter({meta,fasta,args -> args!=null})
-			| CGEMLST
-
-	emit:
-		cgemlst = cgemlst_ch
-		org_name = fa_org_ch.map({meta,fa,org_name -> [meta,org_name]})
-}
-
+def orgArgs = new groovy.json.JsonSlurper().parseText(file("${moduleDir}/assets/default_org_args.json").text)
 
 
 workflow AMR_ANNOT_ASSEMBLY {
@@ -112,14 +67,22 @@ workflow AMR_ANNOT_ASSEMBLY {
 
     // Run orgfinder to auto detect organism
     def orgfinder_dir_ch = Channel.empty()
+    def orgfinder_name_ch = Channel.empty()
     if (!opts.skip.orgfinder) {
-    	orgfinder_dir_ch = ORGFINDER_DETECT(asm_ch).orgfinder	
+    	ORGFINDER_DETECT(asm_ch)
+    	orgfinder_dir_ch = ORGFINDER_DETECT.out.orgfinder
+    	orgfinder_name_ch = ORGFINDER_DETECT.out.org_name
     }
-			
-		// ---------------------------------------------------------------------
-		// Organism specific tools
-		// ---------------------------------------------------------------------
-		//ann_ch = AMR_ANNOT_ASSEMBLY_FOR_ORG(opts,asm_ch,orgfinder_ch.org_name)
+
+		// MLST typing on detected org_name
+		def cgemlst_ch = Channel.empty()
+		if (!opts.skip.cgemlst) {
+			cgemlst_ch = asm_ch
+				.join(orgfinder_name_ch)
+				.map({m,fa,org -> arg=orgArgs[org]?:[:];[m,fa,arg.cgemlst]})
+				.filter({m,fa,arg -> arg})
+				| CGEMLST
+		}
 
 	emit:
 			orgfinder           = orgfinder_dir_ch
@@ -128,10 +91,9 @@ workflow AMR_ANNOT_ASSEMBLY {
 			mobtyper            = mobtyper_ch
 			plasmidfinder       = plasmidfinder_ch
 			prokka              = prokka_ch
-			org_name            = Channel.empty() //ann_ch.org_name			
-			cgemlst             = Channel.empty() //ann_ch.cgemlst
+			org_name            = orgfinder_name_ch
+			cgemlst             = cgemlst_ch
 			MLST                = MLST_ch
-			
 }
 
 
