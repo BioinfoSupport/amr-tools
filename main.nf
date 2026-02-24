@@ -71,6 +71,7 @@ workflow {
 
 		// Compute assemblies QC stats
 		ASSEMBLIES_QC(
+			params.assemblies_qc,
 			asm_fa_ch,
 			sr_ch.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]}),
 			lr_ch.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]})
@@ -82,12 +83,15 @@ workflow {
 		
 
 	publish:
+		checkm2_db = ASSEMBLIES_QC.out.checkm2_db
+		
 		reads_long_filtered = lr_ch
 		reads_short_filtered = sr_ch
 		filtered_reads_multiqc_html = FILTERED_READS_QC.out.multiqc_html
 		
 		assemblies_fasta = asm_fa_ch
-		assemblies_multiqc_txt = ASSEMBLIES_QC.out.assembly_multiqc_txt
+		assemblies_checkm2      = ASSEMBLIES_QC.out.checkm2
+		assemblies_multiqc_txt  = ASSEMBLIES_QC.out.assembly_multiqc_txt
 		assemblies_multiqc_xlsx = ASSEMBLIES_QC.out.assembly_multiqc_xlsx
 
 		resfinder            = AMR_ANNOT.out.resfinder
@@ -107,6 +111,9 @@ workflow {
 }
 
 output {
+	checkm2_db {
+		path { x -> x >> "db/checkm2"}
+	}
 	
 	reads_long_filtered {
 		path { m,x -> x >> "reads/filtered_long/${m.sample_id}.fastq.gz"}
@@ -126,6 +133,9 @@ output {
 
 	assemblies_fasta {
 		path { m,x -> x >> "assemblies/${m[0].sample_id}__${m[1].assembler_name}.fasta"}
+	}
+	assemblies_checkm2 {
+		path { m,x -> x >> "assemblies/${m[0].sample_id}__${m[1].assembler_name}.qc/checkm2_quality.tsv"}
 	}
 	assemblies_multiqc_txt {
 		path { x -> x >> "assemblies_multiqc.txt"}

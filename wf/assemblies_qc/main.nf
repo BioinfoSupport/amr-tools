@@ -5,6 +5,8 @@ include { SAMTOOLS_STATS as SAMTOOLS_STATS_SHORT } from './modules/samtools/stat
 include { BWA_MEM            } from './modules/bwa/mem'
 include { BWA_INDEX          } from './modules/bwa/index'
 include { ORGANIZE_FILES     } from './modules/organize_files'
+include { CHECKM2_DB         } from './modules/checkm2/db'
+include { CHECKM2_PREDICT    } from './modules/checkm2/predict'
 
 
 
@@ -54,6 +56,7 @@ process ASSEMBLIES_MULTIQC {
 
 workflow ASSEMBLIES_QC {
 	take:
+		opts
 		fa_ch
 		fqs_ch
 		fql_ch
@@ -67,6 +70,19 @@ workflow ASSEMBLIES_QC {
 		MINIMAP2_ALIGN_ONT(fa_ch.join(fql_ch))
 		SAMTOOLS_STATS_LONG(MINIMAP2_ALIGN_ONT.out.bam)
 		
+		// Genome completness
+		def checkm2_db_ch = Channel.empty()
+		def checkm2_ch = Channel.empty()
+		if (!opts.skip.checkm2) {
+			if (opts.checkm2_db) {
+				checkm2_db_ch = Channel.FromPath(opts.checkm2_db)
+			} else {
+				checkm2_db_ch = CHECKM2_DB()
+			}
+			CHECKM2_PREDICT(fa_ch,checkm2_db_ch)
+			checkm2_ch = CHECKM2_PREDICT.out
+		}
+		
 		//TODO: RUN VCF_LONG
 		//TODO: RUN VCF_SHORT
 		//TODO: HTML_REPORT()
@@ -74,7 +90,8 @@ workflow ASSEMBLIES_QC {
 		fa_ch
 			.join(SAMTOOLS_STATS_LONG.out,remainder:true)
 			.join(SAMTOOLS_STATS_SHORT.out,remainder:true)
-			.map({meta,x1,x2,x3 -> [meta,[[x1,"assembly.fasta"],[x2,"long_reads.bam.stats"],[x3,"short_reads.bam.stats"]].findAll({x,y -> x})]})
+			.join(checkm2_ch,remainder:true)
+			.map({meta,x1,x2,x3,x4 -> [meta,[[x1,"assembly.fasta"],[x2,"long_reads.bam.stats"],[x3,"short_reads.bam.stats"],[x4,"checkm2_quality_report.tsv"]].findAll({x,y -> x})]})
 			| ORGANIZE_FILES
 		
 		COMBINE_QC_STATS(ORGANIZE_FILES.out,"${moduleDir}/assets")
@@ -94,6 +111,9 @@ workflow ASSEMBLIES_QC {
 		assembly_qc           = COMBINE_QC_STATS.out.rds
 		assembly_multiqc_txt  = ASSEMBLIES_MULTIQC.out.txt
 		assembly_multiqc_xlsx = ASSEMBLIES_MULTIQC.out.xlsx
+		
+		checkm2    = checkm2_ch
+		checkm2_db = checkm2_db_ch
 }
 
 
