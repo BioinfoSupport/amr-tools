@@ -44,8 +44,12 @@ workflow {
 		lr_ch = lr_ch.fq.mix(CONVERT_LONG_BAM_TO_FASTQ(lr_ch.bam))
 
 		// Filter reads
-		READS_FILTER(sr_ch,lr_ch)
-		FILTERED_READS_QC(READS_FILTER.out.short_filtered,READS_FILTER.out.long_filtered)
+		if (!params.reads_filter.skip) {
+			READS_FILTER(sr_ch,lr_ch)
+			sr_ch = READS_FILTER.out.short_filtered
+			lr_ch = READS_FILTER.out.long_filtered
+		}
+		FILTERED_READS_QC(sr_ch,lr_ch)
 		
 		// Run denovo assembly process when 
 		// Determine assemblies that are done and thus that have to be run
@@ -57,8 +61,8 @@ workflow {
 		| COPY_ASSEMBLY_FASTA
 		ASSEMBLE(
 				params.assembler.name,
-				READS_FILTER.out.short_filtered.join(asm_ch.todo.map({[it.subMap('sample_id')]})),
-				READS_FILTER.out.long_filtered.join(asm_ch.todo.map({[it.subMap('sample_id')]}))
+				sr_ch.join(asm_ch.todo.map({[it.subMap('sample_id')]})),
+				lr_ch.join(asm_ch.todo.map({[it.subMap('sample_id')]}))
 		)
 		def asm_fa_ch = Channel.empty().mix(
 				COPY_ASSEMBLY_FASTA.out.map({[[it[0],[assembler_name:'none']],it[1]]}),
@@ -68,8 +72,8 @@ workflow {
 		// Compute assemblies QC stats
 		ASSEMBLIES_QC(
 			asm_fa_ch,
-			READS_FILTER.out.short_filtered.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]}),
-			READS_FILTER.out.long_filtered.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]})
+			sr_ch.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]}),
+			lr_ch.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]})
 		)
 
 		
@@ -78,13 +82,13 @@ workflow {
 		AMR_ANNOT(
 			params.amr,
 			asm_fa_ch,
-			READS_FILTER.out.short_filtered.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]}),
-			READS_FILTER.out.long_filtered.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]})
+			sr_ch.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]}),
+			lr_ch.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]})
 		)
 
 	publish:
-		reads_long_filtered = READS_FILTER.out.long_filtered
-		reads_short_filtered = READS_FILTER.out.short_filtered
+		reads_long_filtered = lr_ch
+		reads_short_filtered = sr_ch
 		filtered_reads_multiqc_html = FILTERED_READS_QC.out.multiqc_html
 		
 		assemblies_fasta = asm_fa_ch

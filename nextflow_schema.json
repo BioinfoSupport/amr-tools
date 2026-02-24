@@ -37,6 +37,11 @@
 			"title": "Parameters for tool reads_filter",
 			"type": "object",
 			"properties": {
+				"skip": {
+					"type": "boolean",
+					"description": "Should read filtering be skipped to work with given reads",
+					"default": false
+				},
 		    "long_limit": {
 		      "type": "integer",
 		      "description": "Limit the number input reads to this maximum total length (in bp), -1 to skip",
