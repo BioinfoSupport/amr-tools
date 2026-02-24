@@ -121,14 +121,13 @@ workflow AMR_ANNOT_READS {
 workflow AMR_ANNOT {
 	take:
 		opts
-		asm_ch
-		fqs_ch
-		fql_ch
+		asm_ch   // tuple(meta,path()) with meta=[[sample_id:""],[assembler_name:""]]
+		fqs_ch   // tuple(meta,path()) with meta=[sample_id:""]
+		fql_ch   // tuple(meta,path()) with meta=[sample_id:""]
 	main:
 		fai_ch = SAMTOOLS_FAIDX(asm_ch)
 		AMR_ANNOT_ASSEMBLY(opts,asm_ch)
 		AMR_ANNOT_READS(opts,fqs_ch,fql_ch)
-		/*
 		MULTIREPORT(
 			asm_ch,
 			fai_ch,
@@ -146,7 +145,6 @@ workflow AMR_ANNOT {
 			AMR_ANNOT_READS.out.resfinder_short,
 			AMR_ANNOT_READS.out.plasmidfinder_short
 		)
-		*/
 	emit:
 			orgfinder           = AMR_ANNOT_ASSEMBLY.out.orgfinder
 			amrfinderplus       = AMR_ANNOT_ASSEMBLY.out.amrfinderplus
@@ -160,10 +158,10 @@ workflow AMR_ANNOT {
 			resfinder_short     = AMR_ANNOT_READS.out.resfinder_short
 			plasmidfinder_long  = AMR_ANNOT_READS.out.plasmidfinder_long
 			plasmidfinder_short = AMR_ANNOT_READS.out.plasmidfinder_short
-			
-	    multireport_folder = Channel.empty() //MULTIREPORT.out.folder
-    	multireport_html   = Channel.empty() //MULTIREPORT.out.html.map({m,x -> x})
-    	multireport_xlsx   = Channel.empty() //MULTIREPORT.out.xlsx.map({m,x -> x})
+
+	    multireport_folder = MULTIREPORT.out.folder
+    	multireport_html   = MULTIREPORT.out.html.map({m,x -> x})
+    	multireport_xlsx   = MULTIREPORT.out.xlsx.map({m,x -> x})
 }
 
 

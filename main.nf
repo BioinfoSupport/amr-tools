@@ -76,15 +76,10 @@ workflow {
 			lr_ch.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]})
 		)
 
-		
-
 		// Finally run AMR annotations
-		AMR_ANNOT(
-			params.amr,
-			asm_fa_ch,
-			sr_ch.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]}),
-			lr_ch.combine(asm_fa_ch.map({m,x->m}),by:0).map({[[it[0],it[2]],it[1]]})
-		)
+		AMR_ANNOT(params.amr,asm_fa_ch,sr_ch,lr_ch)
+		
+		
 
 	publish:
 		reads_long_filtered = lr_ch
@@ -94,18 +89,20 @@ workflow {
 		assemblies_fasta = asm_fa_ch
 		assemblies_multiqc_txt = ASSEMBLIES_QC.out.assembly_multiqc_txt
 		
-		resfinder           = AMR_ANNOT.out.resfinder
-		resfinder_long      = AMR_ANNOT.out.resfinder_long
-		resfinder_short     = AMR_ANNOT.out.resfinder_short
-		plasmidfinder       = AMR_ANNOT.out.plasmidfinder
-		plasmidfinder_long  = AMR_ANNOT.out.plasmidfinder_long
-		plasmidfinder_short = AMR_ANNOT.out.plasmidfinder_short
-		amrfinderplus       = AMR_ANNOT.out.amrfinderplus
-		mobtyper            = AMR_ANNOT.out.mobtyper
-		MLST                = AMR_ANNOT.out.MLST
-		prokka              = AMR_ANNOT.out.prokka
-		cgemlst             = AMR_ANNOT.out.cgemlst
-		orgfinder           = AMR_ANNOT.out.orgfinder
+		resfinder            = AMR_ANNOT.out.resfinder
+		resfinder_long       = AMR_ANNOT.out.resfinder_long
+		resfinder_short      = AMR_ANNOT.out.resfinder_short
+		plasmidfinder        = AMR_ANNOT.out.plasmidfinder
+		plasmidfinder_long   = AMR_ANNOT.out.plasmidfinder_long
+		plasmidfinder_short  = AMR_ANNOT.out.plasmidfinder_short
+		amrfinderplus        = AMR_ANNOT.out.amrfinderplus
+		mobtyper             = AMR_ANNOT.out.mobtyper
+		MLST                 = AMR_ANNOT.out.MLST
+		prokka               = AMR_ANNOT.out.prokka
+		cgemlst              = AMR_ANNOT.out.cgemlst
+		orgfinder            = AMR_ANNOT.out.orgfinder
+		amr_multireport_html = AMR_ANNOT.out.multireport_html
+		amr_multireport_xlsx = AMR_ANNOT.out.multireport_xlsx
 }
 
 output {
@@ -124,50 +121,63 @@ output {
 	filtered_reads_multiqc_html {
 		path { x -> x >> "filtered_reads_multiqc.html"}
 	}
-	
+
+
 	assemblies_fasta {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.fasta"}
+		path { m,x -> x >> "assemblies/${m[0].sample_id}__${m[1].assembler_name}.fasta"}
 	}
 	assemblies_multiqc_txt {
 		path { x -> x >> "assemblies_multiqc.txt"}
 	}
+
 	
-	resfinder {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/resfinder"}
-	}
 	resfinder_long {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/resfinder_long"}
+		path { m,x -> x >> "amr/reads/${m.sample_id}/resfinder_long"}
 	}
 	resfinder_short {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/resfinder_short"}
-	}
-	plasmidfinder {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/plasmidfinder"}
+		path { m,x -> x >> "amr/reads/${m.sample_id}/resfinder_short"}
 	}
 	plasmidfinder_long {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/plasmidfinder_long"}
+		path { m,x -> x >> "amr/reads/${m.sample_id}/plasmidfinder_long"}
 	}
 	plasmidfinder_short {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/plasmidfinder_short"}
+		path { m,x -> x >> "amr/reads/${m.sample_id}/plasmidfinder_short"}
+	}
+	
+
+	resfinder {
+		path { m,x -> x >> "amr/assemblies/${m[0].sample_id}__${m[1].assembler_name}.amr/resfinder"}
+	}
+	plasmidfinder {
+		path { m,x -> x >> "amr/assemblies/${m[0].sample_id}__${m[1].assembler_name}.amr/plasmidfinder"}
 	}
 	amrfinderplus {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/amrfinderplus"}
+		path { m,x -> x >> "amr/assemblies/${m[0].sample_id}__${m[1].assembler_name}.amr/amrfinderplus"}
 	}
 	mobtyper {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/mobtyper"}
+		path { m,x -> x >> "amr/assemblies/${m[0].sample_id}__${m[1].assembler_name}.amr/mobtyper"}
 	}
 	MLST {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/MLST"}
+		path { m,x -> x >> "amr/assemblies/${m[0].sample_id}__${m[1].assembler_name}.amr/MLST"}
 	}
 	prokka {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/prokka"}
+		path { m,x -> x >> "amr/assemblies/${m[0].sample_id}__${m[1].assembler_name}.amr/prokka"}
 	}
 	orgfinder {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/orgfinder"}
+		path { m,x -> x >> "amr/assemblies/${m[0].sample_id}__${m[1].assembler_name}.amr/orgfinder"}
 	}
 	cgemlst {
-		path { m,x -> x >> "assemblies/${m[1].assembler_name}/${m[0].sample_id}.amr/cgemlst"}
+		path { m,x -> x >> "amr/assemblies/${m[0].sample_id}__${m[1].assembler_name}.amr/cgemlst"}
 	}
+	
+
+	amr_multireport_html {
+		path { x -> x >> "amr_multireport.html"}
+	}
+	amr_multireport_xlsx {
+		path { x -> x >> "amr_multitable.xlsx"}
+	}
+
 }
 
 

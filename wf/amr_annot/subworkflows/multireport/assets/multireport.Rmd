@@ -6,7 +6,7 @@ output:
     flexdashboard::flex_dashboard:
         orientation: rows
 params:
-    indir: "results_amr-annot/samples/"
+    indir: "/Users/prados/Documents/AMR-genomics/amr-tools/work/1a/efb6b0fd83cc3a7bb15b1ed0d77e91/output"
 ---
 
 ```{r setup}
@@ -360,9 +360,8 @@ Column
 ### Resfinder
 ```{r fig.height=6, fig.width=4}
 summarise_resistances(db) |>
-	mutate(assembly_id = str_c(sample_id,assembly_name,sep='/')) |>
-	distinct(assembly_id,resistance_name) |>
-	mutate(resistance_name = fct_reorder2_hclust(resistance_name,assembly_id,rep(1,n()))) |>
+	distinct(sample_id,resistance_name) |>
+	mutate(resistance_name = fct_reorder2_hclust(resistance_name,sample_id,rep(1,n()))) |>
 	ggplot(aes(y=resistance_name)) +
 	geom_bar() +
 	geom_text(aes(x=max(after_stat(count)),label=resistance_name),stat="count",angle=90,hjust=0,size=3) +
@@ -384,12 +383,12 @@ p1 <- CONTIGS |>
 	geom_col()
 
 p2 <- CONTIGS |>
-	select(id,resistance_names) |>
+	select(contig_id=id,resistance_names) |>
 	unnest_longer(resistance_names) |> 
 	ungroup() |>
 	distinct() |>
-	mutate(resistance_names=fct_reorder2_hclust(resistance_names,id,rep(1,n()))) |>
-	ggplot(aes(x=id,y=resistance_names)) +
+	mutate(resistance_names=fct_reorder2_hclust(resistance_names,contig_id,rep(1,n()))) |>
+	ggplot(aes(x=contig_id,y=resistance_names)) +
 	geom_tile() +
 	scale_x_discrete(drop=FALSE)
 

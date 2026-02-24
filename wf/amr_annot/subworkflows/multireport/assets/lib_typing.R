@@ -28,6 +28,7 @@ read_resfinder_json <- function(json_file) {
 			pluck("seq_regions") |>
 			tibble() |> 
 			unnest_wider(1) |>
+			mutate(query_id = if ("query_id" %in% names(.data)) query_id else NA_character_) |>
 			mutate(contig_id = str_replace(query_id," .*",""))
 	} else {
 		out <- NULL
@@ -177,32 +178,33 @@ contig_meta <- function(fasta_filename) {
 
 
 db_load <- function(amr_dir) {
-	#amr_dir <- "results_amr-annot/output"
-	samples <- fs::path(amr_dir,"samples") |>
-			fs::dir_ls(recurse = 0) |>
-			enframe(name = NULL,value = "sample_path") |>
-			mutate(sample_id = sample_path |> basename()) |>
-			mutate(resfinder_long_reads = map(fs::path(sample_path,"long_reads","resfinder","data.json"),read_resfinder_json)) |>
-			mutate(resfinder_short_reads = map(fs::path(sample_path,"short_reads","resfinder","data.json"),read_resfinder_json)) |>
-			mutate(plasmidfinder_long_reads = map(fs::path(sample_path,"long_reads","plasmidfinder","data.json"),read_plasmidfinder_json)) |>
-			mutate(plasmidfinder_short_reads = map(fs::path(sample_path,"short_reads","plasmidfinder","data.json"),read_plasmidfinder_json))
-
-	assemblies <- fs::path(amr_dir,"samples") |>
-			fs::dir_ls(recurse = 3,glob = "*/assemblies/*/assembly.fasta") |>
-			fs::path_dir() |> 
-			enframe(name = NULL,value = "assembly_path") |>
-			mutate(assembly_name = basename(assembly_path)) |>
-			mutate(sample_id = assembly_path |> fs::path_dir() |> fs::path_dir() |> basename()) |>
-			mutate(assembly_id = str_c(sample_id,assembly_name,sep = '/')) |>
-			mutate(org_name = map_chr(fs::path(assembly_path,"org_name.txt"),read_org_name)) |>
-			mutate(orgfinder_tax = map(fs::path(assembly_path,"orgfinder","tax.tsv"),read_orgfinder_tax)) |>
-			mutate(orgfinder_ani = map(fs::path(assembly_path,"orgfinder","ani.tsv"),read_orgfinder_tsv)) |>
-			mutate(contigs = map(fs::path(assembly_path,"assembly.fasta"),contig_meta)) |>
-			mutate(mlst = map(fs::path(assembly_path,"mlst","data.json"),read_cgemlst_json)) |>
-			mutate(plasmidfinder = map(fs::path(assembly_path,"plasmidfinder","data.json"),read_plasmidfinder_json)) |>
-			mutate(resfinder = map(fs::path(assembly_path,"resfinder","data.json"),read_resfinder_json)) |>
-			mutate(amrfinderplus = map(fs::path(assembly_path,"amrfinderplus","report.tsv"),read_amrfinderplus_tsv)) |>		
-			mutate(mobtyper = map(fs::path(assembly_path,"mobtyper.tsv"),read_mobtyper_tsv))
+	#amr_dir <- "/Users/prados/Documents/AMR-genomics/amr-tools/work/1a/efb6b0fd83cc3a7bb15b1ed0d77e91/output"
+	assemblies <- fs::path(amr_dir,"amr/assemblies") |>
+		fs::dir_ls(glob = "*.fasta") |>
+		enframe(name = NULL,value = "assembly_path") |>
+		mutate(assembly_id = fs::path_file(assembly_path) |> fs::path_ext_remove()) |>
+		mutate(sample_id = assembly_id |> str_extract("(.*)__(.*)",1)) |>
+		mutate(assembler_name = assembly_id |> str_extract("(.*)__(.*)",2)) |>
+		mutate(amr_path = assembly_path |> fs::path_ext_set(".amr")) |>
+		mutate(org_name = map_chr(fs::path(amr_path,"org_name.txt"),read_org_name)) |>
+		mutate(orgfinder_tax = map(fs::path(amr_path,"orgfinder","tax.tsv"),read_orgfinder_tax)) |>
+		mutate(orgfinder_ani = map(fs::path(amr_path,"orgfinder","ani.tsv"),read_orgfinder_tsv)) |>
+		mutate(contigs = map(assembly_path,contig_meta)) |>
+		mutate(mlst = map(fs::path(amr_path,"mlst","data.json"),read_cgemlst_json)) |>
+		mutate(plasmidfinder = map(fs::path(amr_path,"plasmidfinder","data.json"),read_plasmidfinder_json)) |>
+		mutate(resfinder = map(fs::path(amr_path,"resfinder","data.json"),read_resfinder_json)) |>
+		mutate(amrfinderplus = map(fs::path(amr_path,"amrfinderplus","report.tsv"),read_amrfinderplus_tsv)) |>		
+		mutate(mobtyper = map(fs::path(amr_path,"mobtyper.tsv"),read_mobtyper_tsv))
+	
+	samples <- fs::path(amr_dir,"amr/reads") |>
+		fs::dir_ls(glob="*.reads_amr",type="directory") |>
+		enframe(name = NULL,value = "reads_amr_path") |>
+		mutate(sample_id = reads_amr_path |> fs::path_file() |> fs::path_ext_remove()) |>
+		full_join(select(assemblies,sample_id),by="sample_id") |>
+		mutate(resfinder_long_reads = map(fs::path(reads_amr_path,"resfinder_long","data.json"),read_resfinder_json)) |>
+		mutate(resfinder_short_reads = map(fs::path(reads_amr_path,"resfinder_short","data.json"),read_resfinder_json)) |>
+		mutate(plasmidfinder_long_reads = map(fs::path(reads_amr_path,"plasmidfinder_long","data.json"),read_plasmidfinder_json)) |>
+		mutate(plasmidfinder_short_reads = map(fs::path(reads_amr_path,"plasmidfinder_short","data.json"),read_plasmidfinder_json))
 	
 	list(samples=samples,assemblies=assemblies)
 }
@@ -212,9 +214,9 @@ summarise_assembly <- function(db) {
 	#db <- db_load("results_amr-annot/output/samples") 
 
 	assemblies <- db$assemblies |> 
-		select(assembly_id,sample_id,assembly_name,contigs) |> 
+		select(assembly_id,sample_id,assembler_name,contigs) |> 
 		unnest(contigs) |> 
-		group_by(assembly_id,sample_id,assembly_name) |> 
+		group_by(assembly_id,sample_id,assembler_name) |> 
 		summarise(num_contig=n(),assembly_length=sum(contig_length),GC=weighted.mean(GC,contig_length),N50=N50(contig_length)) |>
 		ungroup()
 	mlst <- db$assemblies |> select(assembly_id,mlst) |> unnest(mlst)
@@ -245,13 +247,13 @@ summarise_resistances <- function(db) {
 	#db <- db_load("results")
 	bind_rows(
 		resfinder = db$assemblies |> 
-			select(assembly_id,sample_id,assembly_name,resfinder) |> 
+			select(assembly_id,sample_id,assembler_name,resfinder) |> 
 			unnest(resfinder) |>
-			select(assembly_id,sample_id,assembly_name,contig_id,resistance_name,coverage,identity,position),
+			select(assembly_id,sample_id,assembler_name,contig_id,resistance_name,coverage,identity,position),
 		amrfinderplus = db$assemblies |> 
-			select(assembly_id,sample_id,assembly_name,amrfinderplus) |> 
+			select(assembly_id,sample_id,assembler_name,amrfinderplus) |> 
 			unnest(amrfinderplus) |>
-			select(assembly_id,sample_id,assembly_name,contig_id,resistance_name,coverage,identity,position),
+			select(assembly_id,sample_id,assembler_name,contig_id,resistance_name,coverage,identity,position),
 		resfinder_long_reads = db$samples |> 
 			select(sample_id,resfinder_long_reads) |> 
 			unnest(resfinder_long_reads) |>
@@ -262,24 +264,24 @@ summarise_resistances <- function(db) {
 			select(sample_id,contig_id,resistance_name,coverage,identity,position),
 		.id = "source"
 	) |>
-		arrange(assembly_id,sample_id,assembly_name,contig_id,resistance_name,desc(coverage),desc(identity)) |>
+		arrange(assembly_id,sample_id,assembler_name,contig_id,resistance_name,desc(coverage),desc(identity)) |>
 		ungroup()
 }
 
 summarise_plasmidfinder_hits <- function(db) {
 	#db <- db_load("results_amr-annot/output/samples") 
-	select(db$assemblies,assembly_id,sample_id,assembly_name,plasmidfinder) |> 
+	select(db$assemblies,assembly_id,sample_id,assembler_name,plasmidfinder) |> 
 		unnest(plasmidfinder) |>
-		select(assembly_id,sample_id,assembly_name,contig_id,plasmid_type,coverage,identity,position=positions_in_contig) |>
+		select(assembly_id,sample_id,assembler_name,contig_id,plasmid_type,coverage,identity,position=positions_in_contig) |>
 		left_join(summarise_contigs(db) |> select(assembly_id,contig_id,contig_length,contig_is_plasmid=is_plasmid)) |>
-		arrange(assembly_id,sample_id,assembly_name,contig_id,desc(coverage),desc(identity)) |>
+		arrange(assembly_id,sample_id,assembler_name,contig_id,desc(coverage),desc(identity)) |>
 		ungroup()
 }
 
 summarise_contigs <- function(db) {
 	#db <- db_load("results")
 	contigs <- db$assemblies |> 
-		select(assembly_id,sample_id,assembly_name,contigs) |> 
+		select(assembly_id,sample_id,assembler_name,contigs) |> 
 		unnest(contigs)
 	res <- summarise_resistances(db) |>
 		group_by(assembly_id,contig_id) |>
@@ -295,7 +297,7 @@ summarise_contigs <- function(db) {
 		mutate(relaxase_types = str_split(relaxase_types,",") |> map(str_unique)) |>
 		select(assembly_id,contig_id,relaxase_types)
 	contigs |>
-		select(assembly_id,sample_id,assembly_name,contig_id,contig_length,GC,topology=tag_topology) |>
+		select(assembly_id,sample_id,assembler_name,contig_id,contig_length,GC,topology=tag_topology) |>
 		left_join(res,by=c("assembly_id","contig_id"),relationship = "one-to-one") |>
 		left_join(plf,by=c("assembly_id","contig_id"),relationship = "one-to-one") |>
 		left_join(mob,by=c("assembly_id","contig_id"),relationship = "one-to-one")  |>
