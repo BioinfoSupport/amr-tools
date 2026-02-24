@@ -8,7 +8,8 @@ process CHECKM2_DB {
 		    path('checkm2_db', type: 'dir')
     script:
     """
-    checkm2 database --download --path checkm2_db
+    export CHECKM2_DB_PATH = "$PWD/checkm2_db"
+    checkm2 database --download
     """
 }
 
