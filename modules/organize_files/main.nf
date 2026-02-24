@@ -16,6 +16,7 @@ process ORGANIZE_FILES {
 				}
     	})
     """
+    trap '' PIPE
     mkdir -p output
     ${cmd.join('\n')}
     """
