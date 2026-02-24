@@ -25,6 +25,8 @@ process COMBINE_QC_STATS {
 		source("assets/lib_assembly_stats.R")
 		stats <- read_assembly_stats("./stats")
 		stats[["meta"]] <- '${builder.toString()}'
+		stats[["sample_id"]] <- '${meta[0].sample_id}'
+		stats[["assembler_name"]] <- '${meta[1].assembler_name}'
 		saveRDS(stats,"qc.rds")
 		"""
 }
@@ -38,13 +40,15 @@ process ASSEMBLIES_MULTIQC {
 		path("stats/qc*.rds")
 		path("assets") 
   output:
-    path('multiqc.txt')
+    path('assemblies_multiqc.xlsx'), emit: xlsx
+    path('assemblies_multiqc.txt'),  emit: txt
   script:
 		"""
 		#!/usr/bin/env Rscript
 		source("assets/lib_assembly_stats.R")
-		rlang::inject(aggregate_assembly_stats(!!!(fs::dir_ls("stats",glob="*.rds") |> map(readRDS) |> unname()))) |>
-		write.table(file="multiqc.txt",sep="\\t",quote=FALSE,row.names=FALSE)
+		A <- rlang::inject(aggregate_assembly_stats(!!!(fs::dir_ls("stats",glob="*.rds") |> map(readRDS) |> unname()))) 
+		A |> write.table(file="assemblies_multiqc.txt",sep="\\t",quote=FALSE,row.names=FALSE)
+		A |> openxlsx::write.xlsx("assemblies_multiqc.xlsx")
 		"""
 }
 
@@ -87,8 +91,9 @@ workflow ASSEMBLIES_QC {
 		short_bam_stats = SAMTOOLS_STATS_SHORT.out
 		short_vcf       = Channel.empty()
 		
-		assembly_qc          = COMBINE_QC_STATS.out.rds
-		assembly_multiqc_txt = ASSEMBLIES_MULTIQC.out
+		assembly_qc           = COMBINE_QC_STATS.out.rds
+		assembly_multiqc_txt  = ASSEMBLIES_MULTIQC.out.txt
+		assembly_multiqc_xlsx = ASSEMBLIES_MULTIQC.out.xlsx
 }
 
 

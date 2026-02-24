@@ -88,7 +88,8 @@ workflow {
 		
 		assemblies_fasta = asm_fa_ch
 		assemblies_multiqc_txt = ASSEMBLIES_QC.out.assembly_multiqc_txt
-		
+		assemblies_multiqc_xlsx = ASSEMBLIES_QC.out.assembly_multiqc_xlsx
+
 		resfinder            = AMR_ANNOT.out.resfinder
 		resfinder_long       = AMR_ANNOT.out.resfinder_long
 		resfinder_short      = AMR_ANNOT.out.resfinder_short
@@ -119,7 +120,7 @@ output {
 		}
 	}
 	filtered_reads_multiqc_html {
-		path { x -> x >> "filtered_reads_multiqc.html"}
+		path { x -> x >> "reads_multiqc.html"}
 	}
 
 
@@ -128,6 +129,9 @@ output {
 	}
 	assemblies_multiqc_txt {
 		path { x -> x >> "assemblies_multiqc.txt"}
+	}
+	assemblies_multiqc_xlsx {
+		path { x -> x >> "assemblies_multiqc.xlsx"}
 	}
 
 	
@@ -179,9 +183,6 @@ output {
 	}
 
 }
-
-
-
 
 
 
