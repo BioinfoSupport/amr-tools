@@ -132,6 +132,7 @@ output {
 
 
 	assemblies_fasta {
+		mode "copy" //because link is problematic
 		path { m,x -> x >> "assemblies/${m[0].sample_id}__${m[1].assembler_name}.fasta"}
 	}
 	assemblies_checkm2 {
