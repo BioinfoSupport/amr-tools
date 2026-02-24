@@ -26,6 +26,19 @@ read_samtools_stats <- function(f) {
 	)
 }
 
+read_checkm2_quality_tsv <- function(tsv_file) {
+	#tsv_file <- "results/assemblies/RH2_custom_assembly1__none.qc/checkm2_quality.tsv"
+	expected_structure <- tibble(
+		Completeness = numeric(0),
+		Contamination = numeric(0),
+		Average_Gene_Length = numeric(0)
+	)	
+	if (!file.exists(tsv_file)) return(expected_structure)
+	read_tsv(tsv_file,show_col_types = FALSE,col_types = cols(Completeness="n",Contamination="n",Average_Gene_Length="n",.default="-")) |>
+		bind_rows(expected_structure) |>
+		relocate(Completeness,Contamination,Contamination)
+}
+
 fa_extract_contigs_stats <- function(fa_file) {
 	fa <- readDNAStringSet(fa_file)
 	contigs <- tibble(
@@ -44,6 +57,8 @@ read_assembly_stats <- function(dir) {
 	stats$contigs <- fa_extract_contigs_stats(fs::path(dir,'assembly.fasta'))
 	stats$short_reads <- read_samtools_stats(fs::path(dir,'short_reads.bam.stats'))
 	stats$long_reads <- read_samtools_stats(fs::path(dir,'long_reads.bam.stats'))
+	stats$checkm2 <- read_checkm2_quality_tsv(fs::path(dir,'checkm2_quality_report.tsv'))
+	
 	stats$assembly_stats <- stats$contigs |>
 		summarize(
 			num_contig = n(),
@@ -56,7 +71,6 @@ read_assembly_stats <- function(dir) {
 		)
 	stats
 }
-
 
 aggregate_assembly_stats <- function(...) {
 	list(...) |>
@@ -72,7 +86,7 @@ aggregate_assembly_stats <- function(...) {
 				avg_coverage_depth = num_mapped_bp / assembly_stats$total_len
 			)) 
 		) |>
-		unnest_wider(c(assembly_stats,short_reads,long_reads),names_sep = ".") |>
+		unnest_wider(c(assembly_stats,short_reads,long_reads,checkm2),names_sep = ".") |>
 		relocate("assembly_idx","meta",starts_with("assembly_stats"))
 }
 
