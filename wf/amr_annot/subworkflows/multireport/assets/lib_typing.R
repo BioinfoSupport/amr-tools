@@ -109,7 +109,7 @@ read_mobtyper_tsv <- function(tsv_file) {
 		)	
 		if (!file.exists(tsv_file)) return(expected_structure)
 		#tsv_file <- "results/samples/r62b17.hdr/mobtyper.tsv"
-		read_tsv(tsv_file,col_types = "c") |>
+		read_tsv(tsv_file,col_types = cols(.default="c")) |>
 			mutate(contig_id=str_replace(sample_id," .*","")) |>
 			dplyr::rename(contig_name=sample_id,relaxase_types=`relaxase_type(s)`,rep_types=`rep_type(s)`) |>
 			bind_rows(expected_structure) |>
