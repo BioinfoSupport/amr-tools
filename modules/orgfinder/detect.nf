@@ -15,7 +15,7 @@ process ORGFINDER_DETECT {
 		    """
 		    mkdir ./orgfinder && cp /app/db/tax.tsv /app/db/tax.rds /app/db/db.tsv ./orgfinder
 		    orgfinder ${task.ext.args?:''} --thread=${task.cpus} --out 'orgfinder/ani.tsv' 'assembly.fna'
-		    r -e 'readr::read_tsv("orgfinder/ani.tsv",show_col_types=FALSE) |> 
+		    Rscript -e 'readr::read_tsv("orgfinder/ani.tsv",show_col_types=FALSE) |> 
 		    	dplyr::slice_max(ANI,n=1,with_ties = FALSE) |> 
 		    	dplyr::mutate(stringr::str_glue("ORG_ACC=\\"{assembly_acc}\\"\\nORG_NAME=\\"{org_name}\\"\\nORG_ANI=\\"{ANI}\\"")) |> 
 		    	dplyr::pull() |> 
