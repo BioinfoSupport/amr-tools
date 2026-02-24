@@ -1,6 +1,6 @@
 
 process CHECKM2_PREDICT {
-	  container 'community.wave.seqera.io/library/checkm2:1.1.0--60f287bc25d7a10d'
+	  container 'quay.io/biocontainers/checkm2:1.1.0--pyh7e72e81_1'
     memory '10 GB'
     cpus 4
     time '30 min'
