@@ -46,6 +46,7 @@ read_assembly_stats <- function(dir) {
 	stats$long_reads <- read_samtools_stats(fs::path(dir,'long_reads.bam.stats'))
 	stats$assembly_stats <- stats$contigs |>
 		summarize(
+			num_contig = n(),
 			total_len = sum(length),
 			min_len = min(length),
 			median_len = median(length),
