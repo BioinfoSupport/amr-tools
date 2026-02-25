@@ -30,45 +30,45 @@ workflow AMR_ANNOT_ASSEMBLY {
 	main:
 
 		// CGE - RESFINDER
-		def resfinder_ch = RESFINDER(asm_ch.filter({!opts.skip.resfinder}),'fasta')
+		def resfinder_ch = RESFINDER(asm_ch.filter({!opts.resfinder.skip}),'fasta')
 
 		// Plasmid typing
-		def plasmidfinder_ch = asm_ch.filter({!opts.skip.plasmidfinder}) | PLASMIDFINDER
+		def plasmidfinder_ch = asm_ch.filter({!opts.plasmidfinder.skip}) | PLASMIDFINDER
 
 		// NCBI AMRfinder+
 		def amrfinderplus_ch = Channel.empty()
-		if (!opts.skip.amrfinderplus) {
+		if (!opts.amrfinderplus.skip) {
 			def amrfinderplus_db = AMRFINDERPLUS_UPDATE()
 			amrfinderplus_ch = AMRFINDERPLUS_RUN(asm_ch,amrfinderplus_db)
 		}
 
 		// MOBsuite - MOBtyper
 		def mobtyper_ch = Channel.empty()
-		if (!opts.skip.mobtyper) {
+		if (!opts.mobtyper.skip) {
 			mobtyper_ch = asm_ch | MOBTYPER
 		}
 
 		// PROKKA annotations
 		def prokka_ch = Channel.empty()
-		if (!opts.skip.prokka) {
+		if (!opts.prokka.skip) {
 			prokka_ch = asm_ch | PROKKA
 		}
 
 		// Speciator
 		def speciator_ch = Channel.empty()
-		if (!opts.skip.speciator) {
+		if (!opts.speciator.skip) {
 			speciator_ch = asm_ch | SPECIATOR	
 		}
 		
 		def MLST_ch = Channel.empty()
-		if (!opts.skip.MLST) {
+		if (!opts.MLST.skip) {
 			MLST_ch = asm_ch | MLST
 		}
 
     // Run orgfinder to auto detect organism
     def orgfinder_dir_ch = Channel.empty()
     def orgfinder_name_ch = Channel.empty()
-    if (!opts.skip.orgfinder) {
+    if (!opts.orgfinder.skip) {
     	ORGFINDER_DETECT(asm_ch)
     	orgfinder_dir_ch = ORGFINDER_DETECT.out.orgfinder
     	orgfinder_name_ch = ORGFINDER_DETECT.out.org_name
@@ -76,7 +76,7 @@ workflow AMR_ANNOT_ASSEMBLY {
 
 		// MLST typing on detected org_name
 		def cgemlst_ch = Channel.empty()
-		if (!opts.skip.cgemlst) {
+		if (!opts.cgemlst.skip) {
 			cgemlst_ch = asm_ch
 				.join(orgfinder_name_ch)
 				.map({m,fa,org -> arg=orgArgs[org]?:[:];[m,fa,arg.cgemlst]})
@@ -104,10 +104,10 @@ workflow AMR_ANNOT_READS {
 		fqs_ch
 		fql_ch
 	main:
-		PLASMIDFINDER_LONGREAD(fql_ch.filter({!opts.skip.plasmidfinder_longread}))
-		RESFINDER_LONGREAD(fql_ch.filter({!opts.skip.resfinder_longread}),'nanopore')
-		PLASMIDFINDER_SHORTREAD(fqs_ch.filter({!opts.skip.plasmidfinder_shortread}))
-		RESFINDER_SHORTREAD(fqs_ch.filter({!opts.skip.resfinder_shortread}),'illumina')
+		PLASMIDFINDER_LONGREAD(fql_ch.filter({!opts.plasmidfinder.skip_longread}))
+		RESFINDER_LONGREAD(fql_ch.filter({!opts.resfinder.skip_longread}),'nanopore')
+		PLASMIDFINDER_SHORTREAD(fqs_ch.filter({!opts.plasmidfinder.skip_shortread}))
+		RESFINDER_SHORTREAD(fqs_ch.filter({!opts.resfinder.skip_shortread}),'illumina')
 	emit:
 			resfinder_long      = RESFINDER_LONGREAD.out
 			resfinder_short     = RESFINDER_SHORTREAD.out

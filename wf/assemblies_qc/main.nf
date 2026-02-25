@@ -73,9 +73,9 @@ workflow ASSEMBLIES_QC {
 		// Genome completness
 		def checkm2_db_ch = Channel.empty()
 		def checkm2_ch = Channel.empty()
-		if (!opts.skip.checkm2) {
-			if (opts.checkm2_db) {
-				checkm2_db_ch = Channel.FromPath(opts.checkm2_db)
+		if (!opts.checkm2.skip) {
+			if (opts.checkm2.db) {
+				checkm2_db_ch = Channel.FromPath(opts.checkm2.db)
 			} else {
 				checkm2_db_ch = CHECKM2_DB()
 			}

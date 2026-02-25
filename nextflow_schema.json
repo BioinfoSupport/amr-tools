@@ -33,6 +33,20 @@
 			}
 		},
 		
+		"assemblies": {
+			"title": "Assemblies definition",
+			"type": "object",
+			"properties": {
+				"fasta": {
+					"type": "string",
+					"format": "file-path-pattern",
+					"exists": true,
+					"pattern": "^\\S+\\.(fasta|fa|fna)$",
+					"description": "Path to FASTA file containing assembly contigs"
+				}
+			}
+		},
+		
 		"reads_filter": {
 			"title": "Parameters for tool reads_filter",
 			"type": "object",
@@ -60,81 +74,175 @@
 			}
 		},
 		
+		"assemblies_qc": {
+			"title": "Parameters for tool assemblies_qc",
+			"type": "object",
+			"properties": {
+					"checkm2": {
+					  "type": "object",
+						"properties": {
+							"skip": {
+							  "type": "boolean",
+							  "default": "false"
+							},
+							"args": {
+							  "type": "string",
+							  "default": ""
+							},
+							"db": {
+							  "type": "string",
+								"format": "directory-path",
+								"exists": true
+							}
+						}
+					}
+			}
+		},		
+		
+		
+		
 		"amr": {
 			"title": "Parameters for tool amr annotation",
 			"type": "object",
 			"properties": {
-				"skip": {
-					"type": "object",
-					"properties": {
-						"orgfinder": {
-						  "type": "boolean",
-						  "default": "false"
-						},
-						"speciator": {
-						  "type": "boolean",
-						  "default": "true"
-						},
-						"prokka": {
-						  "type": "boolean",
-						  "default": "true"
-						},						
-						"plasmidfinder": {
-						  "type": "boolean",
-						  "default": "false"
-						},
-						"amrfinderplus": {
-						  "type": "boolean",
-						  "default": "false"
-						},				    
-						"resfinder": {
-						  "type": "boolean",
-						  "default": "false"
-						},
-						"plasmidfinder_longread": {
-						  "type": "boolean",
-						  "default": "false"
-						},
-						"resfinder_longread": {
-						  "type": "boolean",
-						  "default": "false"
-						},
-						"plasmidfinder_shortread": {
-						  "type": "boolean",
-						  "default": "false"
-						},
-						"resfinder_shortread": {
-						  "type": "boolean",
-						  "default": "false"
+					"orgfinder": {
+					  "type": "object",
+						"properties": {
+							"skip": {
+							  "type": "boolean",
+							  "default": "false"
+							},
+							"args": {
+							  "type": "string",
+							  "default": ""
+							},
+							"db": {
+							  "type": "string",
+								"format": "directory-path",
+								"exists": true
+							}
+						}
+					},
+					"speciator": {
+					  "type": "object",
+						"properties": {
+							"skip": {
+							  "type": "boolean",
+							  "default": "true"
+							},
+							"args": {
+							  "type": "string",
+							  "default": ""
+							}
+						}
+					},
+					"amrfinderplus": {
+					  "type": "object",
+						"properties": {
+							"skip": {
+							  "type": "boolean",
+							  "default": false
+							},
+							"args": {
+							  "type": "string",
+							  "default": ""
+							}
+						}
+					},
+					"mobtyper": {
+					  "type": "object",
+						"properties": {
+							"skip": {
+							  "type": "boolean",
+							  "default": false
+							},
+							"args": {
+							  "type": "string",
+							  "default": ""
+							}
+						}
+					},
+					"plasmidfinder": {
+					  "type": "object",
+						"properties": {
+							"skip": {
+							  "type": "boolean",
+							  "default": false
+							},
+							"skip_shortread": {
+							  "type": "boolean",
+							  "default": false
+							},
+							"skip_longread": {
+							  "type": "boolean",
+							  "default": false
+							},
+							"args": {
+							  "type": "string",
+							  "default": ""
+							}
+						}
+					},
+					"resfinder": {
+					  "type": "object",
+						"properties": {
+							"skip": {
+							  "type": "boolean",
+							  "default": false
+							},
+							"skip_shortread": {
+							  "type": "boolean",
+							  "default": false
+							},
+							"skip_longread": {
+							  "type": "boolean",
+							  "default": false
+							},
+							"args": {
+							  "type": "string",
+							  "default": ""
+							}
+						}
+					},
+					"cgemlst": {
+					  "type": "object",
+						"properties": {
+							"skip": {
+							  "type": "boolean",
+							  "default": false
+							},
+							"args": {
+							  "type": "string",
+							  "default": ""
+							}
+						}
+					},
+					"MLST": {
+					  "type": "object",
+						"properties": {
+							"skip": {
+							  "type": "boolean",
+							  "default": false
+							},
+							"args": {
+							  "type": "string",
+							  "default": ""
+							}
+						}
+					},
+					"prokka": {
+					  "type": "object",
+						"properties": {
+							"skip": {
+							  "type": "boolean",
+							  "default": true
+							},
+							"args": {
+							  "type": "string",
+							  "default": "--kingdom Bacteria"
+							}
 						}
 					}
-				},
-				
-				"args": {
-					"type": "object",
-					"properties": {
-						"prokka": {
-						  "type": "string",
-						  "default": "--kingdom Bacteria"
-						},
-						"mobtyper": {
-						  "type": "string"
-						},
-						"plasmidfinder": {
-						  "type": "string"
-						},
-						"MLST": {
-						  "type": "string"
-						},
-						"amrfinderplus": {
-						  "type": "string"
-						},
-						"resfinder": {
-						  "type": "string"
-						}
-					}
-				}
-				
 			}
 		},
 				
@@ -180,28 +288,9 @@
 					}
 				}
 			}
-		},
-
-		"assemblies": {
-			"title": "Assemblies definition",
-			"type": "object",
-			"properties": {
-				"fasta": {
-					"type": "string",
-					"format": "file-path-pattern",
-					"exists": true,
-					"pattern": "^\\S+\\.(fasta|fa|fna)$",
-					"description": "Path to FASTA file containing assembly contigs"
-				},
-				"info": {
-					"type": "string",
-					"format": "file-path-pattern",
-					"exists": true,
-					"pattern": "^\\S+\\.(fasta|fa)$",
-					"description": "Path to FASTA file containing assembly contigs"
-				}		
-			}
 		}
+
+
 		
 	}
 }
