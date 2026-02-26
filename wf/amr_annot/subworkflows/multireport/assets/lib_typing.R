@@ -14,6 +14,8 @@ read_org_name <- function(txt_file) {
 
 
 read_resfinder_json <- function(json_file) {
+	#json_file <- "/Volumes/m-Andrey_KPC/BioinfoSupport/pOXA/2026-01_oxa48/basecalling_and_pipeline/results/amr/assemblies/r113b10_RS2313__long_flye_medaka.amr/resfinder/data.json"
+	#json_file <- "/Volumes/m-Andrey_KPC/BioinfoSupport/pOXA/2026-01_oxa48/basecalling_and_pipeline/results/amr/reads/r113b10_RS2313/resfinder_long/data.json"
 	expected_structure <- tibble(
 		contig_id = character(0),
 		name = character(0),
@@ -28,7 +30,7 @@ read_resfinder_json <- function(json_file) {
 			pluck("seq_regions") |>
 			tibble() |> 
 			unnest_wider(1) |>
-			mutate(query_id = if ("query_id" %in% names(.data)) query_id else NA_character_) |>
+			bind_rows(tibble(query_id = character(0))) |>
 			mutate(contig_id = str_replace(query_id," .*",""))
 	} else {
 		out <- NULL
