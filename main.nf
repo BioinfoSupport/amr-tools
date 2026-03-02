@@ -49,7 +49,12 @@ workflow {
 			sr_ch = READS_FILTER.out.short_filtered
 			lr_ch = READS_FILTER.out.long_filtered
 		}
-		FILTERED_READS_QC(sr_ch,lr_ch)
+		def reads_multiqc_html_ch = Channel.empty()
+		if (!params.reads_qc.skip) {
+			FILTERED_READS_QC(sr_ch,lr_ch)
+			reads_multiqc_html_ch = FILTERED_READS_QC.out.multiqc_html
+		}
+		
 		
 		// Run denovo assembly process when 
 		// Determine assemblies that are done and thus that have to be run
@@ -87,7 +92,7 @@ workflow {
 		
 		reads_long_filtered = lr_ch
 		reads_short_filtered = sr_ch
-		filtered_reads_multiqc_html = FILTERED_READS_QC.out.multiqc_html
+		filtered_reads_multiqc_html = reads_multiqc_html_ch
 		
 		assemblies_fasta = asm_fa_ch
 		assemblies_checkm2      = ASSEMBLIES_QC.out.checkm2

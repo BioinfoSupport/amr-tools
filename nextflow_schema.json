@@ -73,7 +73,19 @@
 		    }
 			}
 		},
-		
+
+		"reads_qc": {
+			"title": "Parameters for tool reads_qc",
+			"type": "object",
+			"properties": {
+				"skip": {
+					"type": "boolean",
+					"description": "Should read qc be skipped",
+					"default": false
+				}
+			}
+		},
+
 		"assemblies_qc": {
 			"title": "Parameters for tool assemblies_qc",
 			"type": "object",
