@@ -1,8 +1,8 @@
 process BWA_MEM {
     container 'community.wave.seqera.io/library/bwa_htslib_samtools:56c9f8d5201889a4'
-    memory '5 GB'
+    memory '8 GB'
     cpus 4
-    time '2h'
+    time '1h'
     input:
 	    tuple val(meta), path('index'), path(reads)
     output:
