@@ -1,5 +1,9 @@
 
 process ORGANIZE_FILES {
+    memory '2 GB'
+    cpus 1
+    time '1h'
+    executor 'local'
     input:
     	tuple(val(meta),val(file_pairs)) // liste de [[path(src), target]]
     output:
@@ -15,16 +19,11 @@ process ORGANIZE_FILES {
 							return "mkdir -p \$(dirname '${dest_path}') && echo '${src}' > '${dest_path}'".stripIndent()
 					}
 	    	})
-	    def scriptFile = file("script.sh")
-	    scriptFile.text = """
-		    trap '' PIPE
-		    mkdir -p output
-		    ${cmd.join('\n')}
 	    """
-	    """
-    	bash script.sh
+	    trap '' PIPE
+	    mkdir -p output
+	    ${cmd.join('\n')}
 	    """
 }
-
 
 
