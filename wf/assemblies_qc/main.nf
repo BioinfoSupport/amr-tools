@@ -95,11 +95,12 @@ workflow ASSEMBLIES_QC {
 			| ORGANIZE_FILES
 		
 		COMBINE_QC_STATS(ORGANIZE_FILES.out,"${moduleDir}/assets")
-		
+
 		def assembly_multiqc_txt_ch = Channel.empty()
 		def assembly_multiqc_xlsx_ch = Channel.empty()
-		if (!COMBINE_QC_STATS.out.rds.empty()) {
-			ASSEMBLIES_MULTIQC(COMBINE_QC_STATS.out.rds.map({m,x -> x}).collect(),"${moduleDir}/assets")
+		def rds = COMBINE_QC_STATS.out.rds.map({m,x -> x}).toList()
+		if (!rds.empty()) {
+			ASSEMBLIES_MULTIQC(rds,"${moduleDir}/assets")
 			assembly_multiqc_txt_ch  = ASSEMBLIES_MULTIQC.out.txt
 			assembly_multiqc_xlsx_ch = ASSEMBLIES_MULTIQC.out.xlsx
 		}
