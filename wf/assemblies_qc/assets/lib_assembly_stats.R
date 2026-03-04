@@ -90,4 +90,3 @@ aggregate_assembly_stats <- function(...) {
 		relocate("assembly_idx","meta",starts_with("assembly_stats"))
 }
 
-

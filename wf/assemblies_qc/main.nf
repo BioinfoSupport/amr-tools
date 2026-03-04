@@ -39,7 +39,7 @@ process ASSEMBLIES_MULTIQC {
   cpus 2
   time '30 min'
   input:
-		path("stats/qc*.rds")
+		path(rds,name: 'stats/qc*.rds')
 		path("assets") 
   output:
     path('assemblies_multiqc.xlsx'), emit: xlsx
@@ -48,7 +48,7 @@ process ASSEMBLIES_MULTIQC {
 		"""
 		#!/usr/bin/env Rscript
 		source("assets/lib_assembly_stats.R")
-		A <- rlang::inject(aggregate_assembly_stats(!!!(fs::dir_ls("stats",glob="*.rds") |> map(readRDS) |> unname()))) 
+		A <- rlang::inject(aggregate_assembly_stats(!!!(c(${rds.collect({"'" + it + "'"}).join(",")}) |> map(readRDS) |> unname()))) 
 		A |> write.table(file="assemblies_multiqc.txt",sep="\\t",quote=FALSE,row.names=FALSE)
 		A |> openxlsx::write.xlsx("assemblies_multiqc.xlsx")
 		"""
@@ -104,7 +104,6 @@ workflow ASSEMBLIES_QC {
 			assembly_multiqc_txt_ch  = ASSEMBLIES_MULTIQC.out.txt
 			assembly_multiqc_xlsx_ch = ASSEMBLIES_MULTIQC.out.xlsx
 		}
-		
 
 	emit:
 		long_bam        = MINIMAP2_ALIGN_ONT.out.bam
