@@ -95,7 +95,15 @@ workflow ASSEMBLIES_QC {
 			| ORGANIZE_FILES
 		
 		COMBINE_QC_STATS(ORGANIZE_FILES.out,"${moduleDir}/assets")
-		ASSEMBLIES_MULTIQC(COMBINE_QC_STATS.out.rds.map({m,x -> x}).collect().ifEmpty({Channel.value([])}),"${moduleDir}/assets")
+		
+		def assembly_multiqc_txt_ch = Channel.empty()
+		def assembly_multiqc_xlsx_ch = Channel.empty()
+		if (!COMBINE_QC_STATS.out.rds.empty()) {
+			ASSEMBLIES_MULTIQC(COMBINE_QC_STATS.out.rds.map({m,x -> x}).collect(),"${moduleDir}/assets")
+			assembly_multiqc_txt_ch  = ASSEMBLIES_MULTIQC.out.txt
+			assembly_multiqc_xlsx_ch = ASSEMBLIES_MULTIQC.out.xlsx
+		}
+		
 
 	emit:
 		long_bam        = MINIMAP2_ALIGN_ONT.out.bam
@@ -109,8 +117,8 @@ workflow ASSEMBLIES_QC {
 		short_vcf       = Channel.empty()
 		
 		assembly_qc           = COMBINE_QC_STATS.out.rds
-		assembly_multiqc_txt  = ASSEMBLIES_MULTIQC.out.txt
-		assembly_multiqc_xlsx = ASSEMBLIES_MULTIQC.out.xlsx
+		assembly_multiqc_txt  = assembly_multiqc_txt_ch
+		assembly_multiqc_xlsx = assembly_multiqc_xlsx_ch
 		
 		checkm2    = checkm2_ch
 		checkm2_db = checkm2_db_ch
