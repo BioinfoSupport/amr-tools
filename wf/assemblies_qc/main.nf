@@ -39,7 +39,7 @@ process ASSEMBLIES_MULTIQC {
   cpus 2
   time '30 min'
   input:
-		path("stats/qc*.rds")
+		path("stats/qc*.rds",optional:true)
 		path("assets") 
   output:
     path('assemblies_multiqc.xlsx'), emit: xlsx
@@ -95,7 +95,7 @@ workflow ASSEMBLIES_QC {
 			| ORGANIZE_FILES
 		
 		COMBINE_QC_STATS(ORGANIZE_FILES.out,"${moduleDir}/assets")
-		ASSEMBLIES_MULTIQC(COMBINE_QC_STATS.out.rds.map({m,x -> x}).collect(),"${moduleDir}/assets")
+		ASSEMBLIES_MULTIQC(COMBINE_QC_STATS.out.rds.map({m,x -> x}).collect().ifEmpty({Channel.value([])}),"${moduleDir}/assets")
 
 	emit:
 		long_bam        = MINIMAP2_ALIGN_ONT.out.bam
