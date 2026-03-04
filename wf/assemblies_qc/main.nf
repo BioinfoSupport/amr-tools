@@ -39,7 +39,7 @@ process ASSEMBLIES_MULTIQC {
   cpus 2
   time '30 min'
   input:
-		path("stats/qc*.rds",optional:true)
+		path("stats/qc*.rds"),optional:true
 		path("assets") 
   output:
     path('assemblies_multiqc.xlsx'), emit: xlsx
