@@ -99,7 +99,7 @@ workflow ASSEMBLIES_QC {
 		def assembly_multiqc_txt_ch = Channel.empty()
 		def assembly_multiqc_xlsx_ch = Channel.empty()
 		def rds = COMBINE_QC_STATS.out.rds.map({m,x -> x}).toList()
-		if (!rds.empty()) {
+		if (rds) {
 			ASSEMBLIES_MULTIQC(rds,"${moduleDir}/assets")
 			assembly_multiqc_txt_ch  = ASSEMBLIES_MULTIQC.out.txt
 			assembly_multiqc_xlsx_ch = ASSEMBLIES_MULTIQC.out.xlsx
