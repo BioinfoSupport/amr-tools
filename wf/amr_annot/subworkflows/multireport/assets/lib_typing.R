@@ -250,23 +250,27 @@ summarise_assembly <- function(db) {
 }
 
 summarise_resistances <- function(db) {
-	#db <- db_load("results")
+	#db <- db_load("/Users/prados/Documents/AMR-genomics/amr-tools/work/47/f133187c3eee55943a428e12343029/output")
 	bind_rows(
 		resfinder = db$assemblies |> 
 			select(assembly_id,sample_id,assembler_name,resfinder) |> 
 			unnest(resfinder) |>
+			bind_rows(tibble(contig_id=character(0),resistance_name=character(0),coverage=numeric(0),identity=numeric(0),position=character(0))) |>
 			select(assembly_id,sample_id,assembler_name,contig_id,resistance_name,coverage,identity,position),
 		amrfinderplus = db$assemblies |> 
 			select(assembly_id,sample_id,assembler_name,amrfinderplus) |> 
 			unnest(amrfinderplus) |>
+			bind_rows(tibble(contig_id=character(0),resistance_name=character(0),coverage=numeric(0),identity=numeric(0),position=character(0))) |>
 			select(assembly_id,sample_id,assembler_name,contig_id,resistance_name,coverage,identity,position),
 		resfinder_long_reads = db$samples |> 
 			select(sample_id,resfinder_long_reads) |> 
 			unnest(resfinder_long_reads) |>
+			bind_rows(tibble(contig_id=character(0),resistance_name=character(0),coverage=numeric(0),identity=numeric(0),position=character(0))) |>
 			select(sample_id,contig_id,resistance_name,coverage,identity,position),
 		resfinder_short_reads = db$samples |> 
 			select(sample_id,resfinder_short_reads) |> 
 			unnest(resfinder_short_reads) |>
+			bind_rows(tibble(contig_id=character(0),resistance_name=character(0),coverage=numeric(0),identity=numeric(0),position=character(0))) |>
 			select(sample_id,contig_id,resistance_name,coverage,identity,position),
 		.id = "source"
 	) |>
@@ -275,9 +279,11 @@ summarise_resistances <- function(db) {
 }
 
 summarise_plasmidfinder_hits <- function(db) {
-	#db <- db_load("results_amr-annot/output/samples") 
+	#db <- db_load("/Users/prados/Documents/AMR-genomics/amr-tools/work/47/f133187c3eee55943a428e12343029/output")
+	#db <- db_load("/Users/prados/Documents/AMR-genomics/amr-tools/work/47/f133187c3eee55943a428e12343029")
 	select(db$assemblies,assembly_id,sample_id,assembler_name,plasmidfinder) |> 
 		unnest(plasmidfinder) |>
+		bind_rows(tibble(contig_id=character(0),plasmid_type=character(0),coverage=numeric(0),identity=numeric(0),positions_in_contig=character(0))) |>
 		select(assembly_id,sample_id,assembler_name,contig_id,plasmid_type,coverage,identity,position=positions_in_contig) |>
 		left_join(summarise_contigs(db) |> select(assembly_id,contig_id,contig_length,contig_is_plasmid=is_plasmid)) |>
 		arrange(assembly_id,sample_id,assembler_name,contig_id,desc(coverage),desc(identity)) |>
@@ -285,7 +291,7 @@ summarise_plasmidfinder_hits <- function(db) {
 }
 
 summarise_contigs <- function(db) {
-	#db <- db_load("results")
+	#db <- db_load("/Users/prados/Documents/AMR-genomics/amr-tools/work/47/f133187c3eee55943a428e12343029/output")
 	contigs <- db$assemblies |> 
 		select(assembly_id,sample_id,assembler_name,contigs) |> 
 		unnest(contigs)
@@ -295,14 +301,17 @@ summarise_contigs <- function(db) {
 	plf <- db$assemblies |> 
 		select(assembly_id,plasmidfinder) |> 
 		unnest(plasmidfinder) |>
+		bind_rows(tibble(contig_id=character(0),plasmid_type=character(0))) |>
 		group_by(assembly_id,contig_id) |>
 		summarise(plasmid_types=list(str_unique(plasmid_type)))
 	mob <- db$assemblies |> 
 		select(assembly_id,mobtyper) |> 
 		unnest(mobtyper) |>
+		bind_rows(tibble(contig_id=character(0),relaxase_types=character(0))) |>
 		mutate(relaxase_types = str_split(relaxase_types,",") |> map(str_unique)) |>
 		select(assembly_id,contig_id,relaxase_types)
 	contigs |>
+		bind_rows(tibble(contig_id=character(0),contig_length=numeric(0),GC=numeric(0),tag_topology=character(0))) |>
 		select(assembly_id,sample_id,assembler_name,contig_id,contig_length,GC,topology=tag_topology) |>
 		left_join(res,by=c("assembly_id","contig_id"),relationship = "one-to-one") |>
 		left_join(plf,by=c("assembly_id","contig_id"),relationship = "one-to-one") |>
