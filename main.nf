@@ -133,7 +133,7 @@ output {
 	}
 
 	filtered_reads_multiqc_html {
-		path { "reads_multiqc.html" }
+		path { "reports/" }
 	}
 
 	assemblies_fasta {
@@ -144,10 +144,10 @@ output {
 		path { m,x -> x >> "assemblies/${m[0].sample_id}__${m[1].assembler_name}.qc/checkm2_quality.tsv"}
 	}
 	assemblies_multiqc_txt {
-		path { x -> x >> "assemblies_multiqc.txt"}
+		path { "reports/"}
 	}
 	assemblies_multiqc_xlsx {
-		path { x -> x >> "assemblies_multiqc.xlsx"}
+		path { "reports/"}
 	}
 
 	
@@ -191,10 +191,10 @@ output {
 	}
 	
 	amr_multireport_html {
-		path { x -> x >> "amr_multireport.html"}
+		path { "reports/"}
 	}
 	amr_multireport_xlsx {
-		path { x -> x >> "amr_multitable.xlsx"}
+		path { "reports/"}
 	}
 
 }
