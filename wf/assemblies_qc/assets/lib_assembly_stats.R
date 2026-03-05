@@ -73,9 +73,11 @@ read_assembly_stats <- function(dir) {
 }
 
 aggregate_assembly_stats <- function(...) {
-	list(...) |>
+	x <- list(...) |>
 		enframe(name = "assembly_idx") |>
-		unnest_wider(value) |>
+		unnest_wider(value) 
+	if (nrow(x)<1) return(x)
+	x |>
 		select(!contigs) |>
 		mutate(
 			across(c(short_reads,long_reads),~tibble(
@@ -84,7 +86,7 @@ aggregate_assembly_stats <- function(...) {
 				num_mapped_bp = map_dbl(.x,~pluck(.x,"SN","bases.mapped..cigar.",.default=NA_real_)),
 				pct_mapped = num_mapped/num_sequenced,
 				avg_coverage_depth = num_mapped_bp / assembly_stats$total_len
-			)) 
+			))
 		) |>
 		unnest_wider(c(assembly_stats,short_reads,long_reads,checkm2),names_sep = ".") |>
 		relocate("assembly_idx","meta",starts_with("assembly_stats"))
