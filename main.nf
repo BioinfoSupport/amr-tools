@@ -92,7 +92,7 @@ workflow {
 		
 		reads_long_filtered = lr_ch
 		reads_short_filtered = sr_ch
-		filtered_reads_multiqc_html = reads_multiqc_html_ch.ifEmtpy([])
+		filtered_reads_multiqc_html = reads_multiqc_html_ch.ifEmtpy({[]})
 		
 		assemblies_fasta        = asm_fa_ch
 		assemblies_checkm2      = ASSEMBLIES_QC.out.checkm2
@@ -111,8 +111,8 @@ workflow {
 		prokka               = AMR_ANNOT.out.prokka
 		cgemlst              = AMR_ANNOT.out.cgemlst
 		orgfinder            = AMR_ANNOT.out.orgfinder
-		amr_multireport_html = AMR_ANNOT.out.multireport_html.ifEmtpy([])
-		amr_multireport_xlsx = AMR_ANNOT.out.multireport_xlsx.ifEmtpy([])
+		amr_multireport_html = AMR_ANNOT.out.multireport_html.ifEmtpy({[]})
+		amr_multireport_xlsx = AMR_ANNOT.out.multireport_xlsx.ifEmtpy({[]})
 }
 
 output {
