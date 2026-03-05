@@ -52,7 +52,7 @@ workflow {
 		def reads_multiqc_html_ch = Channel.empty()
 		if (!params.reads_qc.skip) {
 			FILTERED_READS_QC(sr_ch,lr_ch)
-			reads_multiqc_html_ch = FILTERED_READS_QC.out.multiqc_html.filter({it})
+			reads_multiqc_html_ch = FILTERED_READS_QC.out.multiqc_html
 		}
 		
 		
@@ -92,12 +92,12 @@ workflow {
 		
 		reads_long_filtered = lr_ch
 		reads_short_filtered = sr_ch
-		filtered_reads_multiqc_html = reads_multiqc_html_ch.filter({it})
+		filtered_reads_multiqc_html = reads_multiqc_html_ch.ifEmpty([])
 		
 		assemblies_fasta        = asm_fa_ch
 		assemblies_checkm2      = ASSEMBLIES_QC.out.checkm2
-		assemblies_multiqc_txt  = ASSEMBLIES_QC.out.assembly_multiqc_txt.filter({it})
-		assemblies_multiqc_xlsx = ASSEMBLIES_QC.out.assembly_multiqc_xlsx.filter({it})
+		assemblies_multiqc_txt  = ASSEMBLIES_QC.out.assembly_multiqc_txt.ifEmpty([])
+		assemblies_multiqc_xlsx = ASSEMBLIES_QC.out.assembly_multiqc_xlsx.ifEmpty([])
 
 		resfinder            = AMR_ANNOT.out.resfinder
 		resfinder_long       = AMR_ANNOT.out.resfinder_long
@@ -111,8 +111,8 @@ workflow {
 		prokka               = AMR_ANNOT.out.prokka
 		cgemlst              = AMR_ANNOT.out.cgemlst
 		orgfinder            = AMR_ANNOT.out.orgfinder
-		amr_multireport_html = AMR_ANNOT.out.multireport_html.filter({it})
-		amr_multireport_xlsx = AMR_ANNOT.out.multireport_xlsx.filter({it})
+		amr_multireport_html = AMR_ANNOT.out.multireport_html.ifEmpty([])
+		amr_multireport_xlsx = AMR_ANNOT.out.multireport_xlsx.ifEmpty([])
 }
 
 output {
@@ -131,10 +131,10 @@ output {
       }
 		}
 	}
-	filtered_reads_multiqc_html {
-		path { x -> x >> "reads_multiqc.html"}
-	}
 
+	filtered_reads_multiqc_html {
+		path { "reads_multiqc.html" }
+	}
 
 	assemblies_fasta {
 		mode "copy" //because link is problematic
@@ -190,7 +190,6 @@ output {
 		path { m,x -> x >> "amr/assemblies/${m[0].sample_id}__${m[1].assembler_name}.amr/cgemlst"}
 	}
 	
-
 	amr_multireport_html {
 		path { x -> x >> "amr_multireport.html"}
 	}
