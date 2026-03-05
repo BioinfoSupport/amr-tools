@@ -182,7 +182,7 @@ contig_meta <- function(fasta_filename) {
 db_load <- function(amr_dir) {
 	#amr_dir <- "/Users/prados/Documents/AMR-genomics/amr-tools/work/1a/efb6b0fd83cc3a7bb15b1ed0d77e91/output"
 	assemblies <- fs::path(amr_dir,"amr/assemblies") |>
-		fs::dir_ls(glob = "*.fasta") |>
+		fs::dir_ls(glob = "*.fasta",fail=FALSE) |>
 		enframe(name = NULL,value = "assembly_path") |>
 		mutate(assembly_id = fs::path_file(assembly_path) |> fs::path_ext_remove()) |>
 		mutate(sample_id = assembly_id |> str_extract("(.*)__(.*)",1)) |>
@@ -199,7 +199,7 @@ db_load <- function(amr_dir) {
 		mutate(mobtyper = map(fs::path(amr_path,"mobtyper.tsv"),read_mobtyper_tsv))
 	
 	samples <- fs::path(amr_dir,"amr/reads") |>
-		fs::dir_ls(glob="*.reads_amr",type="directory") |>
+		fs::dir_ls(glob="*.reads_amr",type="directory",fail=FALSE) |>
 		enframe(name = NULL,value = "reads_amr_path") |>
 		mutate(sample_id = reads_amr_path |> fs::path_file() |> fs::path_ext_remove()) |>
 		full_join(select(assemblies,sample_id),by="sample_id") |>
