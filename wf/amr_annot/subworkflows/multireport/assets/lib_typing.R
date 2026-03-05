@@ -214,7 +214,7 @@ db_load <- function(amr_dir) {
 
 
 summarise_assembly <- function(db) {
-	#db <- db_load("/Users/prados/Documents/AMR-genomics/amr-tools/work/47/f133187c3eee55943a428e12343029/output") 
+	#db <- db_load("/Users/prados/Documents/AMR-genomics/amr-tools/work/47/f133187c3eee55943a428e12343029/") 
 
 	assemblies <- db$assemblies |> 
 		select(assembly_id,sample_id,assembler_name,contigs) |> 
@@ -223,7 +223,7 @@ summarise_assembly <- function(db) {
 		bind_rows(tibble(contig_length=numeric(0),GC=numeric(0))) |>
 		summarise(num_contig=n(),assembly_length=sum(contig_length),GC=weighted.mean(GC,contig_length),N50=N50(contig_length)) |>
 		ungroup()
-	mlst <- db$assemblies |> select(assembly_id,mlst) |> unnest(mlst)
+	mlst <- db$assemblies |> select(assembly_id,mlst) |> unnest(mlst) |> bind_rows(tibble(mlst_type=character(0))) |> select(assembly_id,mlst_type)
 
 	org_name <- db$assemblies |> 
 		select(assembly_id,org_name,orgfinder_tax) |>

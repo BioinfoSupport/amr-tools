@@ -6,7 +6,7 @@ output:
     flexdashboard::flex_dashboard:
         orientation: rows
 params:
-    indir: "/Users/prados/Documents/AMR-genomics/amr-tools/work/1a/efb6b0fd83cc3a7bb15b1ed0d77e91/output"
+    indir: "/Users/prados/Documents/AMR-genomics/amr-tools/work/1a/efb6b0fd83cc3a7bb15b1ed0d77e91"
 ---
 
 ```{r setup}
@@ -31,7 +31,9 @@ fct_reorder2_hclust <- function(.f, .y, .value) {
     column_to_rownames("y") %>%
     as.matrix() %>%
     t()
-  h <- hclust(dist(wide),method="ward.D2")
+  d <- dist(wide)
+  if (any(is.na(d))) return(.f)
+  h <- hclust(d,method="ward.D2")
   fct_relevel(.f,h$labels[h$order])
 }
 
@@ -144,7 +146,8 @@ plotly::config(displayModeBar=FALSE)
 ```{r}
 amrfinderplus <- db$assemblies |>
 	select(assembly_id,amrfinderplus) |>
-	unnest(amrfinderplus)
+	unnest(amrfinderplus) |>
+	bind_rows(tibble(Class=character(0),Subclass=character(0),resistance_name=character(0)))
 bind_rows(
 	 amrfinderplus |>
 			group_by(
@@ -197,7 +200,8 @@ Row
 ```{r}
 amrfinderplus <- db$assemblies |>
 	select(assembly_id,amrfinderplus) |>
-	unnest(amrfinderplus)
+	unnest(amrfinderplus) |>
+	bind_rows(tibble(Class=character(0),Subclass=character(0),resistance_name=character(0)))
 bind_rows(
 	 amrfinderplus |>
 			group_by(
@@ -465,16 +469,19 @@ plotly::config(displayModeBar=FALSE)
 
 ### Assembly Lengths
 ```{r}
-contigs |>
+D <- contigs |>
 	left_join(select(assemblies,assembly_id,species_name,genus_name),by="assembly_id") |>
 	mutate(assembly_id = fct_reorder(assembly_id,contig_length,sum)) |>
-	mutate(contig_id = fct_reorder(contig_id,contig_length,sum)) |>
-	ggplot() + 
+	mutate(contig_id = fct_reorder(contig_id,contig_length,sum))
+
+if (n_distinct(D$genus_name)>0) {
+	ggplot(D) + 
 		facet_grid(genus_name~.,space = "free_y",scales="free_y") +
 		geom_col(aes(x=contig_length,y=assembly_id,group=contig_id,fill=is_plasmid),color="black",position="stack") + 
 		scale_x_continuous(position="top",labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
 		theme_bw() + theme(legend.position="top") +
 		theme(strip.text.y = element_text(angle=0))
+}
 ```
 
 
