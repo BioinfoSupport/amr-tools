@@ -180,7 +180,8 @@ contig_meta <- function(fasta_filename) {
 
 
 db_load <- function(amr_dir) {
-	#amr_dir <- "/Users/prados/Documents/AMR-genomics/amr-tools/work/1a/efb6b0fd83cc3a7bb15b1ed0d77e91/output"
+	#amr_dir <- "/Users/prados/Documents/AMR-genomics/amr-tools/work/47/f133187c3eee55943a428e12343029/output"
+	#amr_dir <- "/Users/prados/Documents/AMR-genomics/amr-tools/work/47/f133187c3eee55943a428e12343029"
 	assemblies <- fs::path(amr_dir,"amr/assemblies") |>
 		fs::dir_ls(glob = "*.fasta",fail=FALSE) |>
 		enframe(name = NULL,value = "assembly_path") |>
@@ -213,12 +214,13 @@ db_load <- function(amr_dir) {
 
 
 summarise_assembly <- function(db) {
-	#db <- db_load("results_amr-annot/output/samples") 
+	#db <- db_load("/Users/prados/Documents/AMR-genomics/amr-tools/work/47/f133187c3eee55943a428e12343029/output") 
 
 	assemblies <- db$assemblies |> 
 		select(assembly_id,sample_id,assembler_name,contigs) |> 
 		unnest(contigs) |> 
 		group_by(assembly_id,sample_id,assembler_name) |> 
+		bind_rows(tibble(contig_length=numeric(0),GC=numeric(0))) |>
 		summarise(num_contig=n(),assembly_length=sum(contig_length),GC=weighted.mean(GC,contig_length),N50=N50(contig_length)) |>
 		ungroup()
 	mlst <- db$assemblies |> select(assembly_id,mlst) |> unnest(mlst)
@@ -227,12 +229,14 @@ summarise_assembly <- function(db) {
 		select(assembly_id,org_name,orgfinder_tax) |>
 		mutate(org=map2(orgfinder_tax,org_name,~left_join(enframe(.y,name = NULL,value="org_name"),.x) |> select(!org_name) )) |>
 		unnest(org) |>
+		bind_rows(tibble(species_name=character(0),genus_name=character(0))) |>
 		select(assembly_id,org_name,species_name,genus_name)
 
 	orgfinder <- db$assemblies |> 
 		mutate(orgfinder = map2(orgfinder_ani,orgfinder_tax,~left_join(.x,.y,by="org_name"))) |>
 		select(assembly_id,orgfinder) |> 	
 		unnest(orgfinder) |> 
+		bind_rows(tibble(org_name=character(0),ANI=numeric(0),species_name=character(0),genus_name=character(0))) |>
 		select(assembly_id,org_name,ANI,species_name,genus_name) |>
 		group_by(assembly_id) |>
 		slice_max(ANI,n=1,with_ties = FALSE) |>
