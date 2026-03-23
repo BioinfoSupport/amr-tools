@@ -73,6 +73,7 @@ workflow {
 				COPY_ASSEMBLY_FASTA.out.map({[[it[0],[assembler_name:'none']],it[1]]}),
 				ASSEMBLE.out.fasta.map({[[it[0],[assembler_name:params.assembler.name]],it[1]]})
 		)
+		def asm_dir_channel = ASSEMBLE.out.dir.map({[[it[0],[assembler_name:params.assembler.name]],it[1]]})
 
 		// Compute assemblies QC stats
 		ASSEMBLIES_QC(
@@ -95,6 +96,7 @@ workflow {
 		filtered_reads_multiqc_html = reads_multiqc_html_ch.ifEmpty([])
 		
 		assemblies_fasta        = asm_fa_ch
+		assemblies_dir          = asm_dir_channel
 		assemblies_checkm2      = ASSEMBLIES_QC.out.checkm2
 		assemblies_multiqc_txt  = ASSEMBLIES_QC.out.assembly_multiqc_txt.ifEmpty([])
 		assemblies_multiqc_xlsx = ASSEMBLIES_QC.out.assembly_multiqc_xlsx.ifEmpty([])
@@ -140,6 +142,10 @@ output {
 		mode "copy" //because link is problematic
 		path { m,x -> x >> "assemblies/${m[0].sample_id}__${m[1].assembler_name}.fasta"}
 	}
+	assemblies_dir {
+		mode "copy" //because link is problematic
+		path { m,x -> x >> (params.verbose ? "assemblies/${m[0].sample_id}__${m[1].assembler_name}.output" : null)}
+	}	
 	assemblies_checkm2 {
 		path { m,x -> x >> "assemblies/${m[0].sample_id}__${m[1].assembler_name}.qc/checkm2_quality.tsv"}
 	}

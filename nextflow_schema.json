@@ -33,6 +33,12 @@
 			}
 		},
 		
+		"verbose": {
+			"type": "boolean",
+			"default": false,
+			"description": "If on, the pipeline will produce extended outputs for debugging purpose"
+		},
+		
 		"assemblies": {
 			"title": "Assemblies definition",
 			"type": "object",
@@ -95,7 +101,7 @@
 						"properties": {
 							"skip": {
 							  "type": "boolean",
-							  "default": "false"
+							  "default": false
 							},
 							"args": {
 							  "type": "string",
@@ -122,7 +128,7 @@
 						"properties": {
 							"skip": {
 							  "type": "boolean",
-							  "default": "false"
+							  "default": false
 							},
 							"args": {
 							  "type": "string",
@@ -140,7 +146,7 @@
 						"properties": {
 							"skip": {
 							  "type": "boolean",
-							  "default": "true"
+							  "default": true
 							},
 							"args": {
 							  "type": "string",
