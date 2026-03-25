@@ -1,6 +1,5 @@
 
 
-include { SAMTOOLS_FASTQ                } from './modules/samtools/fastq'
 include { LONG_FLYE                     } from './subworkflows/flye_medaka_pilon'
 include { LONG_FLYE_MEDAKA              } from './subworkflows/flye_medaka_pilon'
 include { UNICYCLER as LONG_UNICYCLER   } from './subworkflows/unicycler'
@@ -19,13 +18,6 @@ workflow ASSEMBLE {
 		fql_ch    // channel: [ val(meta), path(long_reads) ]
 	main:
 
-		// CONVERT long_reads given in BAM/CRAM format into FASTQ format if needed
-		fql_ch = fql_ch.branch({meta,f -> 
-			bam: f.name =~ /\.(bam|cram)$/
-			fq: true
-		})
-		fql_ch = fql_ch.fq.mix(SAMTOOLS_FASTQ(fql_ch.bam))
-		
 		def assemblies = [fasta:Channel.empty(),dir:Channel.empty()]
 		switch(assembler_name) {
 			
