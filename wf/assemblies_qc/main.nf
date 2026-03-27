@@ -48,7 +48,7 @@ process ASSEMBLIES_MULTIQC {
 		"""
 		#!/usr/bin/env Rscript
 		source("assets/lib_assembly_stats.R")
-		A <- rlang::inject(aggregate_assembly_stats(!!!(c(${rds.collect({"'" + it + "'"}).join(",")}) |> map(readRDS) |> unname()))) 
+		A <- rlang::inject(aggregate_assembly_stats(!!!(c(${[rds].flatten().collect({"'" + it + "'"}).join(",")}) |> map(readRDS) |> unname()))) 
 		A |> write.table(file="assemblies_multiqc.txt",sep="\\t",quote=FALSE,row.names=FALSE)
 		A |> openxlsx::write.xlsx("assemblies_multiqc.xlsx")
 		"""
