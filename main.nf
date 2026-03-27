@@ -144,10 +144,8 @@ output {
 	}
 	assemblies_dir {
 		mode "copy" //because link is problematic
-		path { m,x -> 
-			//x >> (params.verbose ? "assemblies/${m[0].sample_id}__${m[1].assembler_name}.output" : null)
-			x >> "assemblies/${m[0].sample_id}__${m[1].assembler_name}.output"
-		}
+		enabled params.verbose
+		path { m,x -> x >> "assemblies/${m[0].sample_id}__${m[1].assembler_name}.output"}
 	}	
 	assemblies_checkm2 {
 		path { m,x -> x >> "assemblies/${m[0].sample_id}__${m[1].assembler_name}.qc/checkm2_quality.tsv"}
