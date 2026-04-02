@@ -8,3 +8,7 @@ work/
 *.html
 data/
 results/
+.nf-test/
+.nf-test.log
+nextflow
+nf-test
