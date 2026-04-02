@@ -1,0 +1,18 @@
+nextflow_pipeline {
+
+    name "Test Workflow main.nf"
+    script "main.nf"
+
+    test("Should run without failures") {
+        when {
+            params {
+            		assemblies = [fasta: "${projectDir}/tests/data/*.fasta"]
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+
+}
