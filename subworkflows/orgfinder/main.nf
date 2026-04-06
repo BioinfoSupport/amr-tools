@@ -4,7 +4,7 @@ include { FASTANI } from './modules/fastani'
 
 
 process NCBI_DATASET_DOWNLOAD_GENOME {
-    container 'docker.io/staphb/ncbi-datasets:16.30.0'
+    container 'docker.io/staphb/ncbi-datasets:18.18.0'
     memory '8 GB'
     cpus 1
     time '30 min'
@@ -21,15 +21,17 @@ process NCBI_DATASET_DOWNLOAD_GENOME {
 
 
 process GENOMES_AGGREGATE {
-    container 'docker.io/staphb/ncbi-datasets:16.30.0'
+    container 'docker.io/staphb/ncbi-datasets:18.18.0'
     memory '8 GB'
     cpus 1
     time '30 min'
-    output:
-  		tuple path('genomes/*')
+    input:
+  		path('genomes/genome*')
+  	output:
+  		path('genomes/')
     script:
 	    """
-			// Make the tsv file with all accession numbers
+			# Make the tsv file with all accession numbers
 			cat genomes/*/ncbi_dataset/data/assembly_data_report.jsonl \
 			  | dataformat tsv genome --force --fields accession,organism-name,organism-tax-id,assmstats-total-sequence-len,assmstats-total-number-of-chromosomes \
 			  > genomes/db_accession.tsv
@@ -52,7 +54,8 @@ workflow ORGFINDER_DB_DOWNLOAD {
 		)
 		| NCBI_DATASET_DOWNLOAD_GENOME
 		
-		//GENOMES_AGGREGATE(genomes_ch.collect())
+		GENOMES_AGGREGATE(genomes_ch.collect())
+		
 	emit:
 		fa = Channel.empty()
 }
