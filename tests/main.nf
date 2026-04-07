@@ -1,5 +1,5 @@
 
-include { ORGFINDER_DB_DOWNLOAD } from '../subworkflows/orgfinder/main.nf'
+include { ORGFINDER_DB_DOWNLOAD } from '../subworkflows/orgfinder/db/main.nf'
 
 workflow {
 	main:

@@ -1,0 +1,58 @@
+---
+title: "Taxonomy"
+output: html_document
+date: "2024-10-23"
+---
+
+This is a helper notebook to show taxonomy of organisms in the database.
+
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = normalizePath("."))
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidygraph)
+library(ggraph)
+```
+
+
+# Retreive data from docker container
+```{bash eval=FALSE}
+# Retrieve db.tsv from registry.gitlab.unige.ch/amr-genomics/orgfinder:main image
+id=$(docker create registry.gitlab.unige.ch/amr-genomics/orgfinder:main bash)
+docker cp $id:/app/db/tax.rds ./
+docker rm -v $id
+```
+
+
+# Taxonomy
+```{r}
+TAX <- readRDS("tax.rds")
+
+# Check graph topology
+with_graph(TAX,graph_is_dag())
+with_graph(TAX,graph_is_tree())
+
+TAX |>
+	ggraph("partition",circular=TRUE) +
+	geom_node_arc_bar(aes(fill = rank), size = 0.25) +
+	coord_equal()
+
+TAX |>
+	ggraph("tree",circular=TRUE) +
+	geom_edge_link() +
+	geom_node_point(aes(color=rank)) +
+	coord_equal() +
+	geom_node_label(aes(label=tax_name,fill = rank), size = 2)
+```
+
+
+
+
+
+
+
+
+
+
+
