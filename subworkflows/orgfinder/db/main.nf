@@ -23,12 +23,14 @@ process GENOMES_AGGREGATE {
 	    """
 }
 
-process GENOMES_TO_FASTA {
+process ORGFINDER_DB_ADAPT {
 	input:
-		path('genomes')
+		tuple(val(meta),path('db'))
+	output:
+		path('db/fna/*.fna'),emit:fa
+		path('db/'),emit:db
 	script:
 	"""
-	./db_build.R && chmod -R a+r db
 	"""
 }
 
@@ -44,14 +46,16 @@ workflow ORGFINDER_DB_DOWNLOAD {
 			"taxon 'Streptococcus'           --reference --assembly-level complete",
 			"taxon 'Enterobacterales'        --reference --assembly-level complete",
 			"taxon 'Aeromonas'               --reference --assembly-level complete",
+			"taxon 'Myroides'                --reference --assembly-level complete",
 			"taxon 'Enterococcus faecalis'   --reference",
 			"taxon 'Citrobacter murliniae'   --reference"
 		)
 		| NCBI_DATASET_DOWNLOAD_GENOME
 		genomes_ch = GENOMES_AGGREGATE(genomes_ch.collect()).map({["all_collected_genomes",it]})
-		RSCRIPT(genomes_ch,file("${moduleDir}/assets/db_build.R"),taxdump.view())
-
+		RSCRIPT(genomes_ch,file("${moduleDir}/assets/db_build.R"),taxdump)
+		| ORGFINDER_DB_ADAPT
 	emit:
-		fa = Channel.empty()
+		fa = ORGFINDER_DB_ADAPT.out.fa
+		db = ORGFINDER_DB_ADAPT.out.db
 }
 
