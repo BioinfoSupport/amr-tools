@@ -23,17 +23,6 @@ process GENOMES_AGGREGATE {
 	    """
 }
 
-process ORGFINDER_DB_ADAPT {
-	input:
-		tuple(val(meta),path('db'))
-	output:
-		path('db/fna/*.fna'),emit:fa
-		path('db/'),emit:db
-	script:
-	"""
-	"""
-}
-
 
 workflow ORGFINDER_DB_DOWNLOAD {
 	main:
@@ -53,9 +42,7 @@ workflow ORGFINDER_DB_DOWNLOAD {
 		| NCBI_DATASET_DOWNLOAD_GENOME
 		genomes_ch = GENOMES_AGGREGATE(genomes_ch.collect()).map({["all_collected_genomes",it]})
 		RSCRIPT(genomes_ch,file("${moduleDir}/assets/db_build.R"),taxdump)
-		| ORGFINDER_DB_ADAPT
 	emit:
-		fa = ORGFINDER_DB_ADAPT.out.fa
-		db = ORGFINDER_DB_ADAPT.out.db
+		db = RSCRIPT.out.map({it[1]})
 }
 
