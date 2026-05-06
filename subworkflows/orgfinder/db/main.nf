@@ -28,18 +28,23 @@ workflow ORGFINDER_DB_DOWNLOAD {
 	main:
 		def taxdump = NCBI_TAXDUMP_DOWNLOAD()
 		def genomes_ch = Channel.of(
-			"taxon 'Pseudomonas aeruginosa'  --reference --assembly-level complete",
-			"taxon 'Acinetobacter baumannii' --reference --assembly-level complete",
-			"taxon 'Enterococcus'            --reference --assembly-level complete",
-			"taxon 'Staphylococcus'          --reference --assembly-level complete",
-			"taxon 'Streptococcus'           --reference --assembly-level complete",
-			"taxon 'Enterobacterales'        --reference --assembly-level complete",
-			"taxon 'Aeromonas'               --reference --assembly-level complete",
-			"taxon 'Myroides'                --reference --assembly-level complete",
-			"taxon 'Enterococcus faecalis'   --reference",
-			"taxon 'Citrobacter murliniae'   --reference"
+			"taxon 'Pseudomonas aeruginosa'  --reference --assembly-level complete --include genome,seq-report",
+			"taxon 'Acinetobacter baumannii' --reference --assembly-level complete --include genome,seq-report",
+			"taxon 'Enterococcus'            --reference --assembly-level complete --include genome,seq-report",
+			"taxon 'Staphylococcus'          --reference --assembly-level complete --include genome,seq-report",
+			"taxon 'Streptococcus'           --reference --assembly-level complete --include genome,seq-report",
+			"taxon 'Enterobacterales'        --reference --assembly-level complete --include genome,seq-report",
+			"taxon 'Aeromonas'               --reference --assembly-level complete --include genome,seq-report",
+			"taxon 'Myroides'                --reference --assembly-level complete --include genome,seq-report",
+			"taxon 'Enterococcus faecalis'   --reference --include genome,seq-report",
+			"taxon 'Citrobacter murliniae'   --reference --include genome,seq-report"
 		)
 		| NCBI_DATASET_DOWNLOAD_GENOME
+		
+		// Filter only chromosomic sequences
+		//jq -r 'select(.assignedMoleculeLocationType == "Chromosome") | (.assemblyAccession + ":" + .chrName)' work/55/e3f8291f4f02516b545ef7239acce4/dataset/ncbi_dataset/data/*/sequence_report.jsonl
+
+		
 		genomes_ch = GENOMES_AGGREGATE(genomes_ch.collect()).map({["all_collected_genomes",it]})
 		RSCRIPT(genomes_ch,file("${moduleDir}/assets/db_build.R"),taxdump)
 	emit:

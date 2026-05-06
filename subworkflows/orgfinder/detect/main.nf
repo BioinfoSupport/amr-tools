@@ -16,7 +16,7 @@ process ORGFINDER_DB_ADAPT {
 
 workflow ORGFINDER_DETECT {
 	take:
-		fa_ch   // channel: tuple val(meta), path(fasta)
+		fa_ch   // channel: path(fasta)
 		db_ch   // channel: path(db)
 	main:
 		def query_ch = fa_ch.collect().map({[it]})
@@ -29,3 +29,5 @@ workflow ORGFINDER_DETECT {
 	emit:
 		res = FASTANI.out
 }
+
+

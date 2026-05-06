@@ -1,8 +1,9 @@
 #!/usr/bin/env Rscript
 
-genomes_dir <- "./genomes"
-db_dir <- "./output"
-
+base_dir <- './'
+#base_dir <- 'work/b0/dc33e2734ad3ccb0aee9dfb8b713d9'
+genomes_dir <- fs::path(base_dir,"genomes")
+db_dir <- fs::path(base_dir,"output")
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Load the list of reference genome downloaded from NCBI
@@ -48,7 +49,7 @@ read_tax <- function(taxdump_dir) {
 }
 
 message("load taxonomy")
-tax <- read_tax("extra/taxdump") |>
+tax <- read_tax(fs::path(base_dir,"extra/taxdump")) |>
 	mutate(is_db_tax = tax_id %in% db$tax_id) 
 
 # Find all ancestors of selected nodes
