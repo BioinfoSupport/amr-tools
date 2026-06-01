@@ -11,7 +11,13 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-		MINIMAP2_ALIGN_ASM5([[sample_id:'input'],params.ref,params.query])
+		def query_ch = Channel.fromPath(params.query).map({
+				def id = it.name.replaceAll(/\.(fasta|fna|fa)$/,'')
+				[[sample_id:id],params.ref,it]
+		})
+
+		query_ch 
+		| MINIMAP2_ALIGN_ASM5
 		
 		MINIMAP2_ALIGN_ASM5.out.bam
 		| map({meta,bam -> [meta,params.ref,bam]})

@@ -6,7 +6,7 @@
 		
 		"ref": {
 			"type": "string",
-			"format": "file-path-pattern",
+			"format": "file-path",
 			"exists": true,
 			"pattern": "^\\S+\\.(fasta|fa|fna)$",
 			"description": "Path to FASTA file containing assembly contigs"
