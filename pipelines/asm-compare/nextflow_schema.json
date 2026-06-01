@@ -12,7 +12,7 @@
 			"description": "Path to FASTA file containing assembly contigs"
 		},
 
-		"fasta": {
+		"query": {
 			"type": "string",
 			"format": "file-path-pattern",
 			"exists": true,

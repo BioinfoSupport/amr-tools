@@ -11,7 +11,7 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
-		MINIMAP2_ALIGN_ASM5([[sample_id:'input'],params.ref,params.fasta])
+		MINIMAP2_ALIGN_ASM5([[sample_id:'input'],params.ref,params.query])
 		
 		MINIMAP2_ALIGN_ASM5.out.bam
 		| map({meta,bam -> [meta,params.ref,bam]})

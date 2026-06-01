@@ -1,15 +1,15 @@
 
 # asm-compare
 
-`asm-compare` is a nextflow pipeline to process compare two assemblies and generate a VCF and an HTML report.
+`asm-compare` a simple nextflow pipeline to compare two assemblies and generate a VCF.
 
 The pipeline steps include:
 
-  1) Map the assemblies with `minimap2 -x asm5` and produce an indexed `bam` file
+  1) Map the two assemblies with `minimap2 -x asm5` and produce an indexed `bam` file
 
-  2) Generate a VCF listing the mutation with `bcftools`
+  2) Generate a VCF listing the mutations with `bcftools mpileup`
   
-  3) Generate a simple 3 column table list of mutations from the VCF
+  3) Generate a simple 3 columns table list of mutations from the VCF
 
 
 # Installation
@@ -23,7 +23,7 @@ curl -s https://get.nextflow.io | bash
 # Usage
 
 ```bash
-nextflow run BioinfoSupport/amr-tools/pipelines/asm-compare --ref=ref_assembly.fasta --fasta=assembly.fasta
+nextflow run BioinfoSupport/amr-tools/pipelines/asm-compare --ref=ref_assembly.fasta --query=query_assembly.fasta
 ```
 
 # Test the pipeline
