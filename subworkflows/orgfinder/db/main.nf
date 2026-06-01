@@ -5,24 +5,40 @@ include { NCBI_TAXDUMP_DOWNLOAD        } from './modules/ncbi/taxdump/main.nf'
 include { RSCRIPT                      } from './modules/rscript/main.nf'
 
 
-process GENOMES_AGGREGATE {
+// Make the tsv file with all accession numbers
+process MAKE_DB_ACCESSION_TSV {
     container 'docker.io/staphb/ncbi-datasets:18.18.0'
     memory '8 GB'
     cpus 1
     time '30 min'
     input:
-  		path('genomes/genome*')
+  		path('genomes/query*')
   	output:
   		path('genomes/')
     script:
 	    """
-			# Make the tsv file with all accession numbers
-			cat genomes/*/ncbi_dataset/data/assembly_data_report.jsonl \
+			cat genomes/query*/ncbi_dataset/data/assembly_data_report.jsonl \
 			  | dataformat tsv genome --force --fields accession,organism-name,organism-tax-id,assmstats-total-sequence-len,assmstats-total-number-of-chromosomes \
 			  > genomes/db_accession.tsv
 	    """
 }
 
+
+process MAKE_DB_MOLECULE_TYPE_TSV {
+    container 'community.wave.seqera.io/library/fastp:1.0.1--c8b87fe62dcc103c'
+    memory '2 GB'
+    cpus 1
+    time '30 min'
+    input:
+  		path('genomes/query*')
+  	output:
+  		path('genomes/')
+    script:
+	    """
+			jq -r '(.assemblyAccession + ":" + .chrName + "" + .assignedMoleculeLocationType)' genomes/query*/ncbi_dataset/data/*/sequence_report.jsonl \
+			> genomes/assigned_molecule_types.tsv
+	    """
+}
 
 workflow ORGFINDER_DB_DOWNLOAD {
 	main:
@@ -41,11 +57,12 @@ workflow ORGFINDER_DB_DOWNLOAD {
 		)
 		| NCBI_DATASET_DOWNLOAD_GENOME
 		
-		// Filter only chromosomic sequences
-		//jq -r 'select(.assignedMoleculeLocationType == "Chromosome") | (.assemblyAccession + ":" + .chrName)' work/55/e3f8291f4f02516b545ef7239acce4/dataset/ncbi_dataset/data/*/sequence_report.jsonl
+		genomes_ch = genomes_ch.collect()
+		| MAKE_DB_ACCESSION_TSV
+		| MAKE_DB_MOLECULE_TYPE_TSV
+		| map({["all_collected_genomes",it]})
 
 		
-		genomes_ch = GENOMES_AGGREGATE(genomes_ch.collect()).map({["all_collected_genomes",it]})
 		RSCRIPT(genomes_ch,file("${moduleDir}/assets/db_build.R"),taxdump)
 	emit:
 		db = RSCRIPT.out.map({it[1]})

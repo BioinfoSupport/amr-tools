@@ -1,0 +1,764 @@
+---
+title: "Plasmid sequence alignment"
+format: html
+params:
+  fasta: "../../out/oxa48_IncM1_IncL_plasmids.fasta"
+  core_genome_count: 30
+
+execute:
+  echo: true
+---
+
+```{r setup}
+library(GenomicRanges)
+library(Biostrings)
+library(tidyverse)
+library(tidygraph)
+library(ggraph)
+
+read_blast6 <- function(f) {
+  readr::read_tsv(
+  	f,
+  	col_names = c(
+  		"query_id","subject_id","pct_ident","align_len","num_mismatch",
+  		"num_gapopen","query_start","query_end","subject_start","subject_end",
+  		"evalue","bit_score","query_len","subject_len"
+  	)
+  )
+}
+
+subject_granges <- function(x,...) {
+	GRanges(
+	    x$subject_id,
+	    IRanges(pmin(x$subject_start,x$subject_end),pmax(x$subject_start,x$subject_end)),
+	    strand = ifelse(x$subject_start>x$subject_end,"-","+"),
+	    ...
+	  )
+}
+
+query_granges <- function(x,...) {
+	GRanges(
+	    x$query_id,
+	    IRanges(x$query_start,x$query_end),
+	    strand = "+",
+	    ...
+	  )
+}
+
+gg_pw_alignment <- function(aln) {
+	aln |>
+		ggplot(aes(x=query_start,xend=query_end,y=subject_start,yend=subject_end,color=pct_ident)) +
+			facet_grid(subject_id~query_id) +
+			geom_segment() +
+			coord_equal() +
+			theme(panel.spacing = unit(0,"mm")) + 
+			theme(strip.text.y.right = element_text(angle=0))
+}
+
+aln_polygons <- function(aln) {
+	poly <- aln |>
+		mutate(poly_id = seq(n()))
+
+	bind_rows(
+		poly |>
+			select(poly_id,seq=query_id,query_start,query_end,pct_ident,num_mismatch,num_gapopen) |>
+			pivot_longer(c(query_start,query_end)),
+		poly |>
+			select(poly_id,seq=subject_id,subject_start,subject_end,pct_ident,num_mismatch,num_gapopen) |>
+			pivot_longer(c(subject_start,subject_end))
+	) |>
+		mutate(name = fct_relevel(name,"query_start","query_end","subject_end","subject_start")) |>
+		arrange(poly_id,name)
+}
+
+find_shared_regions <- function(ALN) {
+	d <- query_granges(ALN) |>
+		unstrand() |>
+		disjoin()
+	h <- findOverlaps(d,unstrand(query_granges(ALN)),type = "within")
+	d$subjects <- extractList(ALN$subject_id,as(h,"List")) |> unique()
+	d
+}
+
+
+filter_inner_alignments <- function(ALN) {
+	S <- subject_granges(ALN) |> unstrand()
+	Q <- query_granges(ALN) |> unstrand()
+	
+	# Find alignments coming from the same query sequence and targeting the same subject region
+	w <- findOverlaps(S,S,type="within")
+	w <- w[queryHits(w)!=subjectHits(w)]
+	w <- w[ALN$query_id[queryHits(w)] == ALN$query_id[subjectHits(w)]]
+	
+	filter(ALN,!seq(nrow(ALN)) %in% queryHits(w))
+}
+```
+
+
+# Initialisation
+```{r}
+workdir <- fs::file_temp(tmp_dir="~/Documents/docker") |> fs::path_expand()
+fs::dir_create(workdir)
+#fs::link_create(workdir,str_c(params$fasta,".out"))
+
+Sys.setenv(WORKDIR=workdir)
+file.copy(params$fasta,fs::path(workdir,"input_seq.fasta"))
+print(workdir)
+```
+
+
+
+```{bash, eval=FALSE}
+docker run --rm ncbi/blast:2.13.0 blastn -help
+```
+
+
+# Run BLAST on self sequence
+```{bash}
+docker run --rm -v $WORKDIR/:/cwd \
+  --workdir /cwd ncbi/blast:2.13.0 \
+  blastn -perc_identity 70 -evalue 1e-3 \
+    -query input_seq.fasta \
+    -subject input_seq.fasta \
+    -subject_besthit \
+    -outfmt "6 std qlen slen" \
+    -out input_seq.self.blastn
+```
+
+
+
+# Load FASTA and BLAST Results
+```{r}
+fa <- readDNAStringSet(fs::path(workdir,"input_seq.fasta"))
+aln <- read_blast6(fs::path(workdir,"input_seq.self.blastn"))
+```
+
+
+# Compute a global ANI metrics
+```{r}
+#| fig-height: 10
+#| fig-width: 10
+
+ani <- aln |>
+	filter(align_len>=500) |>
+	group_by(query_id,subject_id) |>
+	summarize(ani = mean(pct_ident)) |>
+	ungroup()
+
+ani_hclust <- local({
+	M <- ani |>
+		pivot_wider(id_cols = query_id,names_from = subject_id,values_from = ani,values_fill = 0) |>
+		column_to_rownames("query_id") |>
+		as.matrix()
+	as.dist(100-M) |>
+		hclust(method="single")
+})
+plot(ani_hclust);abline(h=0.15)
+ani_levels <- ani_hclust$labels[ani_hclust$order]
+
+ani |>
+	mutate(across(c(query_id,subject_id),~fct_relevel(.,ani_levels))) |>
+	ggplot(aes(x=query_id,y=subject_id,fill=ani)) + 
+		geom_tile() +
+		coord_equal() + 
+		scale_fill_continuous(limits=c(98,100),oob=scales::squish) +
+		theme(axis.text.x = element_text(angle=30,hjust=1,vjust=1))
+```
+
+
+
+## Relevel aln 
+```{r}
+aln <- aln |>
+	mutate(across(c(query_id,subject_id),~fct_relevel(.,ani_levels)))
+```
+
+
+# Show pairwise alignments
+```{r}
+#| fig-height: 15
+#| fig-width: 15
+gg_pw_alignment(aln)
+```
+
+
+```{r}
+#| fig-height: 12
+#| fig-width: 7
+aln |>
+	filter(abs(as.integer(query_id) - as.integer(subject_id))==1L) |>
+	filter(align_len>=1000) |>
+	filter_inner_alignments() |>
+	aln_polygons() |>
+	ggplot() + 
+		geom_polygon(aes(x=value,y=seq,group=poly_id,fill=pct_ident))
+```
+
+
+
+
+# Find the alignment sequence (a long common sequence)
+
+```{r}
+d <- find_shared_regions(filter(aln,align_len>=1000))
+plot(width(d),lengths(d$subjects),xlab="common seq length",ylab="Num. seq with hit")
+
+d <- d[lengths(d$subjects) / n_distinct(aln$subject_id) >= 0.80]
+d <- d[which.max(width(d))]
+align_seq <- fa[d]
+writeXStringSet(align_seq,fs::path(workdir,"align_seq.fasta"))
+```
+
+
+# Rotate FASTA on the alignment sequence
+
+## Blast the alignment sequence
+```{bash}
+docker run --rm -v $WORKDIR/:/cwd \
+  --workdir /cwd ncbi/blast:2.13.0 \
+  blastn -perc_identity 70 -evalue 1e-3 \
+    -query align_seq.fasta \
+    -subject input_seq.fasta \
+    -subject_besthit \
+    -outfmt "6 std qlen slen" \
+    -out align_seq.blastn
+```
+
+
+## Generate rotated sequences
+```{r}
+rotation_pos <- read_blast6(fs::path(workdir,"align_seq.blastn")) |>
+	group_by(subject_id) |>
+	slice_head(n=1) |>
+	subject_granges()
+
+# If no hit found, do not rotate sequence (set break point at first base)
+rotation_pos <- c(rotation_pos,GRanges(names(fa),1,strand="+"))
+rotation_pos <- rotation_pos[match(names(fa),seqnames(rotation_pos))]
+rotation_pos <- rotation_pos |> resize(width=0)
+
+# Rotate the sequences, and change strand
+FA <- xscat(subseq(fa,start=start(rotation_pos)),subseq(fa,end=end(rotation_pos)))
+FA[strand(rotation_pos)=="-"] <- reverseComplement(FA[strand(rotation_pos)=="-"])
+#names(FA) <- paste0(names(fa),"_",start(resize(rotation_pos,0)),"_",strand(rotation_pos))
+names(FA) <- names(fa)
+writeXStringSet(FA,fs::path(workdir,"rotated_sequences.fasta"))
+```
+
+
+
+# Run Self-BLAST on rotated sequences
+```{bash}
+docker run --rm -v $WORKDIR/:/cwd \
+  --workdir /cwd ncbi/blast:2.13.0 \
+  blastn -perc_identity 70 -evalue 1e-3 \
+    -query rotated_sequences.fasta \
+    -subject rotated_sequences.fasta \
+    -subject_besthit \
+    -outfmt "6 std qlen slen" \
+    -out rotated_sequences.self.blastn
+```
+
+## Load alignment of rotated sequences
+```{r}
+ALN <- read_blast6(fs::path(workdir,"rotated_sequences.self.blastn")) |>
+	mutate(across(c(query_id,subject_id),~fct_relevel(.,ani_levels)))
+```
+
+# Show alignments
+```{r}
+#| fig-height: 15
+#| fig-width: 15
+gg_pw_alignment(ALN)
+```
+
+
+
+```{r}
+#| fig-height: 22
+#| fig-width: 15
+polygons <- ALN |>
+	filter(abs(as.integer(query_id) - as.integer(subject_id))==1L) |>
+	filter(align_len>=1000) |>
+	filter_inner_alignments() |>	
+	aln_polygons() |>
+		mutate(seq = fct_relevel(seq,levels(ani$subject_id))) |>
+		group_by(poly_id) |>
+		filter(max(as.integer(seq)) - min(as.integer(seq))==1L)
+seqlen <- seqlengths(FA) |>
+	enframe(name = "seq",value = "seqlen")
+
+polygons_centers <- polygons %>%
+  group_by(poly_id) %>%
+  summarise(x = mean(value),y = mean(as.numeric(seq)),label = str_c(first(num_mismatch),"|",first(num_gapopen)))
+
+polygons |>
+		ggplot() + 
+			geom_polygon(aes(x=value,y=seq,group=poly_id,fill=pct_ident),alpha=0.66,color="black") +
+			geom_text(aes(x=x,y=y,label=label),data=polygons_centers,size=3) +
+			geom_segment(aes(x=0,xend=seqlen,y=seq,yend=seq),data = seqlen,linewidth=2) +
+			scale_x_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+			scale_fill_continuous(limits=c(98,100),oob=scales::squish,low="red") +
+			theme_bw() + 
+			ylab("") + xlab("Genomic position")
+ggsave(fs::path(workdir,"multiple_alignment_lab.pdf"))
+```
+
+
+
+# Annotate rotated sequences
+
+git clone https://github.com/BioinfoSupport/amr-tools.git
+
+docker run --rm -it \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v $(pwd):$(pwd) \
+  --platform linux/amd64 \
+  --workdir $(pwd) \
+  --env NXF_HOME=$(pwd)/.nextflow_home \
+  nextflow/nextflow:25.10.4 bash
+
+
+nextflow run ./amr-tools --assemblies.fasta='rotated_sequences.fasta'
+
+
+
+```{bash}
+docker run --rm \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v $WORKDIR/:$WORKDIR/ \
+  --platform linux/amd64 \
+  --workdir $WORKDIR/ \
+  --env NXF_HOME=$WORKDIR/.nextflow_home \
+  nextflow/nextflow:25.10.0 \
+      nextflow run BioinfoSupport/amr-tools -r v0.60 \
+      --assemblies.fasta 'rotated_sequences.fasta' \
+      --amr.prokka.skip=false
+```
+
+
+# Load genomes annotations
+
+```{r}
+pos_pat <- "([0-9]+)(-|\\.\\.)([0-9]+)(:([-+]))?"
+res_gff <- readxl::read_xlsx(fs::path(workdir,"results/reports/multitable.xlsx"),"resistances") |>
+	mutate(
+		seq = contig_id,
+		start = str_extract(position,pos_pat,1) |> as.integer(),
+		end = str_extract(position,pos_pat,3) |> as.integer(),
+		strand = str_extract(position,pos_pat,5)
+	)
+
+inc_gff <- readxl::read_xlsx(fs::path(workdir,"results/reports/multitable.xlsx"),"plasmidfinder_hits") |>
+	mutate(
+		seq = contig_id,
+		start = str_extract(position,pos_pat,1) |> as.integer(),
+		end = str_extract(position,pos_pat,3) |> as.integer(),
+		strand = str_extract(position,pos_pat,5)
+	)
+
+# Deduce plasmid type
+plasmid_types <- select(inc_gff,contig_id,plasmid_type,plasmid_type_identity=identity) |>
+	group_by(contig_id) |>
+	mutate(plasmid_type=fct_relevel(plasmid_type,"IncM1","IncL","IncX3")) |>
+	slice_min(plasmid_type,n=1,with_ties = FALSE) |>
+	summarise(plasmid_types=str_c(plasmid_type,collapse = ","))
+```
+
+```{r}
+#| fig-height: 15
+#| fig-width: 15
+polygons |>
+		ggplot() + 
+			geom_polygon(aes(x=value,y=seq,group=poly_id,fill=pct_ident),alpha=0.66,color="black") +
+			geom_text(aes(x=x,y=y,label=label),data=polygons_centers,size=3) +
+			geom_segment(aes(x=0,xend=seqlen,y=seq,yend=seq),data = seqlen,linewidth=2) +
+			geom_segment(aes(x=start,xend=end,y=seq,yend=seq),data = inc_gff,linewidth=2,color="yellow") +
+			geom_segment(aes(x=start,xend=end,y=seq,yend=seq),data = res_gff,linewidth=2,color="red") +
+			scale_x_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+			scale_fill_continuous(limits=c(98,100),oob=scales::squish,low="red",high="lightblue") +
+			theme_bw() + 
+			theme(panel.grid = element_blank()) +
+			ylab("") + xlab("Genomic position")
+```
+
+
+
+# Core genes identification
+
+
+## Run pairwise BLAST on all proteins identified by prokka
+```{bash}
+docker run --rm -v $WORKDIR/:/cwd \
+  --workdir /cwd ncbi/blast:2.13.0 \
+  blastp \
+    -query results/amr/assemblies/rotated_sequences__none.amr/prokka/prokka.faa \
+    -subject results/amr/assemblies/rotated_sequences__none.amr/prokka/prokka.faa \
+    -subject_besthit \
+    -outfmt "6 std qlen slen" \
+    -out prokka.self.blastp
+```
+
+
+## Load gene-gene hits, and keep only reciprocal ones
+```{r}
+z <- read_blast6(fs::path(workdir,"prokka.self.blastp")) |>
+	filter(align_len/query_len > 0.75) |> # alignment must cover 60% of the query
+	group_by(query_id,subject_id) |>
+	slice_max(bit_score,n=1,with_ties = FALSE) |> # keep best hit of each query to a given subject (redundant with -subject_besthit)
+	ungroup() |>
+	filter(str_c(query_id,subject_id,sep = ":") %in% str_c(subject_id,query_id,sep = ":")) |> # keep only reciprocal links
+	filter(query_id != subject_id)
+
+# Make undirected data keeping the worst element
+z <- z |>
+	mutate(undirected_edge_id = str_c(pmin(query_id,subject_id),pmax(query_id,subject_id))) |>
+	group_by(undirected_edge_id) |>
+	slice_min(bit_score,n=1,with_ties = FALSE) |>
+	ungroup()
+```
+
+
+
+## Transform into a graph to identify clusters spanning large majority of genomes
+
+```{r}
+g <- tbl_graph(
+  nodes = fs::path(workdir,"results/amr/assemblies/rotated_sequences__none.amr/prokka/prokka.gff") |>
+			rtracklayer::import.gff3() |>
+			as_tibble() |>
+			select(ID,contig_id=seqnames,width),
+  edges = select(z,query_id,subject_id,bit_score,pct_ident),
+  directed = FALSE
+) |>
+	mutate(cluster_id = group_components())
+
+# In each cluster keep best paralogs hits
+g <- g |>
+	mutate(score = centrality_closeness(weights=100.1-pct_ident)) |>
+	group_by(cluster_id,contig_id) |>
+	mutate(rk=row_number(score)) |>
+	ungroup() |>
+	filter(rk<=1)
+
+# Clusters stats
+k <- g |>
+	as_tibble() |>
+  group_by(cluster_id) |>
+	summarize(cluster_size=n_distinct(ID),distinct_plasmid=n_distinct(contig_id),mean(width)) |>
+	filter(cluster_size==distinct_plasmid) 
+```
+
+
+```{r}
+plot(k$distinct_plasmid);abline(h=params$core_genome_count)
+plot(k$distinct_plasmid,k$`mean(width)`);abline(v=params$core_genome_count)
+g <- g |>
+	filter(cluster_id %in% k$cluster_id[k$distinct_plasmid>=params$core_genome_count])
+g |>
+	as_tibble() |>
+	group_by()
+```
+
+
+# PyMLST
+
+## Generate input FASTA for pyMLST_db
+```{r}
+library(Rsamtools)
+pyMLST_db <- local({
+	gff <- fs::path(workdir,"results/amr/assemblies/rotated_sequences__none.amr/prokka/prokka.gff") |>
+		rtracklayer::import.gff3() |>
+		subset(ID %in% pull(g,"ID"))
+	dna <- getSeq(FaFile(fs::path(workdir,"results/amr/assemblies/rotated_sequences__none.amr/prokka/prokka.fna")),gff)
+	names(dna) <- gff$ID
+	dna <- splitAsList(dna,seqnames(gff))
+	
+	fs::dir_create(fs::path(workdir,"pyMLST_input_fasta"))
+	pyMLST_db <- names(dna) |>
+		enframe(name = NULL,value="contig_id") |>
+		rowwise() |>
+		mutate(pyMLST_fasta = {
+			fn <- fs::path(workdir,"pyMLST_input_fasta",paste0(make.names(contig_id),".fasta"))
+			writeXStringSet(dna[[contig_id]],fn)
+			fn
+		})
+	
+	pyMLST_db
+})
+```
+
+
+## Run pyMLST
+
+### Initialize DB with appropriate reference
+```{bash eval=FALSE}
+docker run --rm -v $WORKDIR/:/cwd \
+  --workdir /cwd --platform linux/amd64 \
+  staphb/pymlst:2.2.2 \
+  wgMLST create --force pyMLST_db pyMLST_input_fasta/r16b20_RS1480__contig_5.fasta
+```
+
+
+### Populate DB
+```{bash}
+docker run --rm -v $WORKDIR/:/cwd \
+  --workdir /cwd --platform linux/amd64 \
+  staphb/pymlst:2.2.2 bash -c \
+  "ls pyMLST_input_fasta/*.fasta | xargs -n1 wgMLST add --coverage 0.85 --identity 0.85 pyMLST_db"
+```
+
+
+```{bash}
+docker run --rm -v $WORKDIR/:/cwd \
+  --workdir /cwd --platform linux/amd64 \
+  staphb/pymlst:2.2.2 bash -c \
+  "wgMLST distance -o pyMLST_db.dist.tsv pyMLST_db & wgMLST mlst -o pyMLST_db.mlst.tsv pyMLST_db & wgMLST msa -o pyMLST_db.msa.tsv pyMLST_db"
+```
+
+
+## Display pyMLST results
+
+```{r}
+# Read distance matrix and compute plasmid tree
+pyDistMat <- read.table(fs::path(workdir,"pyMLST_db.dist.tsv"),sep="\t",skip=1,row.names = 1) |>
+  data.matrix()
+rownames(pyDistMat) <- pyMLST_db$contig_id[match(rownames(pyDistMat),fs::path_file(pyMLST_db$pyMLST_fasta))]
+colnames(pyDistMat) <- rownames(pyDistMat)
+h <- hclust(as.dist(pyDistMat),method="single")
+```
+
+
+```{r}
+#| fig-height: 8
+#| fig-width: 7
+p <- as_tbl_graph(pyDistMat+1) |>
+	left_join(plasmid_types,by=c(name="contig_id"),relationship = "one-to-one") |>	
+	mutate(category = if_else(str_starts(name,"[0-9]"),"This study","Other Study")) |>
+	mutate(label = str_replace(name,"_bla.*","")) |>
+	convert(to_minimum_spanning_tree,weights = weight) |>
+  ggraph("stress") +
+    coord_equal() +
+		geom_edge_link(color="grey") +
+		geom_node_point(aes(color=category,shape=plasmid_types),size=5) +
+		geom_edge_link(aes(label=weight),label_size=4,color=NA)
+p
+ggsave(fs::path(workdir,"pyMLST_minimum_spanning_tree.pdf"))
+
+p + geom_node_label(
+    	aes(label=label),
+    	size=3,repel = TRUE,max.overlaps=+Inf,
+    	segment.colour="lightgrey",
+    	data = ~filter(.,category=="This study")
+    )
+ggsave(fs::path(workdir,"pyMLST_minimum_spanning_tree_lab.pdf"))
+```
+
+
+
+```{r}
+# Read plasmid typing by pyMLST
+mlst <- read.table(fs::path(workdir,"pyMLST_db.mlst.tsv"),sep="\t",comment="",header=TRUE,check.names = FALSE) |>
+	dplyr::rename(gene_id=`#GeneId`) |>
+  pivot_longer(values_to = "allele",names_to = "pyMLST_fasta",!gene_id) |>
+	left_join(pyMLST_db |> mutate(pyMLST_fasta=fs::path_file(pyMLST_fasta)) |> dplyr::rename(plasmid=contig_id)) |>
+	mutate(plasmid = fct_relevel(plasmid,h$labels[h$order]))
+```
+
+
+```{r}
+#| fig-height: 10
+#| fig-width: 30
+mlst |>
+  filter(!is.na(allele)) |>
+  group_by(gene_id) |>
+	mutate(allele_idx = as.integer(factor(allele))) |>
+	ungroup() |>
+  ggplot(aes(x=gene_id,y=plasmid,fill=factor(allele_idx))) + 
+	  geom_tile() +
+	  #geom_text(aes(label=allele),size=2) + 
+	  scale_fill_brewer() +
+	  #coord_equal() +
+	  theme_classic() + labs(fill="allele") + xlab("") +
+	  theme(axis.text.x=element_text(angle=45,hjust=1),legend.position = "right") +
+		theme(axis.text.x=element_blank()) + 
+		xlab("All core genes") +
+		theme(legend.position="right")
+ggsave(fs::path(workdir,"pyMLST_alleles_heatmap.pdf"))
+```
+
+```{r}
+#| fig-height: 10
+#| fig-width: 15
+mlst |>
+  filter(!is.na(allele)) |>
+  group_by(gene_id) |>
+	mutate(allele_idx = as.integer(factor(allele))) |>
+	group_by(gene_id) |>
+	filter(n_distinct(allele)>1) |>
+	left_join(fs::path(workdir,"results/samples/rotated_sequences/assemblies/null/prokka/prokka.tsv") |> read_tsv() |> mutate(gene_id=str_replace(locus_tag,"_","-")) |> select(gene_id,length_bp,gene)) |>
+	mutate(label = if_else(is.na(gene),gene_id,str_replace(gene,"_[0-9]*$",""))) |>
+	#mutate(label = str_glue("{label} ({length_bp}bp)")) |>
+  ggplot(aes(x=label,y=plasmid,fill=factor(allele_idx))) + 
+	  geom_tile() +
+	  scale_fill_brewer() +
+	  theme_classic() + labs(fill="allele") + xlab("") +
+	  theme(axis.text.x=element_text(angle=45,hjust=1),legend.position = "right") + 
+		xlab("Distinct core genes")
+ggsave(fs::path(workdir,"pyMLST_distincts_alleles_heatmap.pdf"))
+```
+
+
+```{r}
+#| fig-height: 8
+#| fig-width: 5
+as_tbl_graph(h) |>
+	mutate(label = fs::path_file(label) |> fs::path_ext_remove() |> str_replace("(_ASM|_bla).*","")) |>
+  ggraph() + 
+    coord_flip() +
+    scale_y_reverse() +
+    expand_limits(y=-7) +
+    geom_edge_elbow() + 
+    geom_node_label(aes(label=label,filter=leaf),size=3,hjust=0,nudge_y = +0.5) + 
+    theme(legend.position="bottom")
+ggsave(fs::path(workdir,"pyMLST_alleles_dendrogram.pdf"))
+```
+
+
+
+
+
+# FastANI
+
+## Core genomes extraction
+
+
+```{r}
+#| fig-height: 18
+#| fig-width: 12
+hits <- ALN |>
+	filter(align_len>=500) |>
+	filter(query_id!=subject_id)
+hits <- c(
+	GRanges(hits$query_id,IRanges(hits$query_start,hits$query_end),name=hits$subject_id,seqinfo=seqinfo(FA)),
+	GRanges(hits$subject_id,IRanges(pmin(hits$subject_start,hits$subject_end),pmax(hits$subject_start,hits$subject_end)),name=hits$query_id,seqinfo=seqinfo(FA))
+)
+hits <- splitAsList(hits,hits$name) |>
+	GenomicRanges::reduce() |>
+	coverage() |>
+	as("GRanges")
+core_mask <- hits |>
+	#subset(score>=45) |>	
+	subset(score>=params$core_genome_count) |>
+	GenomicRanges::reduce() |>
+	subset(width>=500) |>
+	gaps(ignore.strand=TRUE)
+hits$is_core <- countOverlaps(hits,core_mask)==0
+	
+
+hits |>
+	as_tibble() |>
+	filter(score>0) |>
+	ggplot(aes(xmin=start,xmax=end,ymin=0,ymax=score,fill=is_core)) +
+	facet_grid(seqnames~.) +
+	geom_rect() +
+	scale_fill_manual(values = c("TRUE"="black","FALSE"="grey")) +
+	theme(strip.text.y.right = element_text(angle=0)) +
+	theme(panel.spacing = unit(0,"mm")) +
+	theme(legend.position = "top") +
+	ggtitle("Core genome") + ylab("Number of plasmid aligning")
+ggsave(fs::path(workdir,"core_genomes_view.pdf"))
+```
+
+
+## Core Genome Sequences
+```{r}
+#FA_MSK <- FA
+#FA_MSK[IRangesList(core_mask)[names(FA)]] <- chartr("ACGT", "NNNN", FA_MSK[IRangesList(core_mask)[names(FA)]])
+fs::dir_create(fs::path(workdir,"FastANI_db"))
+FastANI_db <- seqlevels(hits) |>
+	enframe(name = NULL,value="plasmid_id") |>
+	rowwise() |>
+	mutate(fasta = {
+		fn <- fs::path(workdir,"FastANI_db",paste0(make.names(plasmid_id),".fasta"))
+		h <- hits[seqnames(hits)==plasmid_id]
+		dna <- FA[h]
+		names(dna) <- as.character(h)
+		writeXStringSet(dna,fn)
+		fn
+	})
+```
+
+
+```{bash}
+docker run --rm -v $WORKDIR/:/cwd --platform linux/amd64 \
+  --workdir /cwd registry.gitlab.unige.ch/amr-genomics/orgfinder:v0.2 bash -c \
+  "ls FastANI_db/*.fasta > fastANI_file_list.txt && /app/fastANI --ql fastANI_file_list.txt --rl fastANI_file_list.txt -o fastANI_output.txt -t8 --fragLen 500"
+```
+
+
+
+```{r}
+#| fig-height: 12
+#| fig-width: 14
+core_ANI <- readr::read_tsv(fs::path(workdir,"fastANI_output.txt"),col_names = c("query","ref","ANI","bi_frag","query_frag")) |>
+	left_join(FastANI_db |> mutate(fasta=fs::path_rel(fasta,start = workdir)) |> select(ref=fasta,ref_id=plasmid_id))	|>
+	left_join(FastANI_db |> mutate(fasta=fs::path_rel(fasta,start = workdir)) |> select(query=fasta,query_id=plasmid_id))
+
+core_h <- core_ANI |>
+	mutate(D = 100 - ANI) |>
+	pivot_wider(id_cols = query_id,names_from = "ref_id",values_from = "D") |>
+	column_to_rownames("query_id") |>
+	as.matrix()
+core_h <- core_h[,rownames(core_h)]
+core_h <- pmax(core_h,t(core_h)) |>
+	as.dist() |>
+	hclust(method="single")
+plot(core_h)
+
+plt_ani_mat <- core_ANI |>
+	ungroup() |>
+	mutate(across(c(ref_id,query_id),list(origin=~if_else(str_starts(.,"[0-9]"),"here","other")))) |>
+	mutate(ref_id=fct_relevel(ref_id,core_h$labels[core_h$order])) |>
+	mutate(query_id=fct_relevel(query_id,levels(ref_id))) |>
+	ggplot(aes(x=query_id,y=ref_id,fill=ANI)) +
+		#facet_grid(plasmid_types_ref + ref_id_origin~plasmid_types_query + query_id_origin,space="free",scales="free") +
+		geom_tile() +
+		#coord_equal() + 
+		theme_bw() +
+		theme(panel.grid = element_blank()) +
+		theme(axis.text.x = element_text(angle=30,hjust=1,vjust=1)) +
+		theme(panel.spacing = unit(0,"mm")) +
+		theme(legend.position="top") +
+		ggtitle("Pairwise ANI of Core Plamids Genomes")
+
+plt_plasmid <- plasmid_types |>
+	mutate(ref_id = fct_relevel(contig_id,core_h$labels[core_h$order])) |>
+	ggplot(aes(x="plasmid_types",y=ref_id,fill=plasmid_types)) + 
+	geom_tile() +
+	geom_text(aes(label=plasmid_types)) + 
+	theme(legend.position="none") +
+	theme(panel.grid = element_blank()) 
+
+library(patchwork)
+plt_ani_mat + plt_plasmid + plot_layout(axes = "collect_y",widths=c(5,1))
+ggsave(fs::path(workdir,"fastANI_matrix.pdf"))
+```
+
+
+
+
+```{r}
+#| fig-height: 8
+#| fig-width: 5
+as_tbl_graph(core_h) |>
+	left_join(plasmid_types,by=c("label"="contig_id")) |>
+  ggraph() + 
+    coord_flip() +
+    scale_y_reverse() +
+    expand_limits(y=-1) +
+    geom_edge_elbow() + 
+    geom_node_label(aes(label=label,filter=leaf,fill=plasmid_types),size=3,hjust=0,nudge_y = +0.1) + 
+    theme(legend.position="bottom")
+ggsave(fs::path(workdir,"core_ANI_dendrogram.pdf"))
+```
