@@ -20,10 +20,14 @@ The pipeline depends on nextflow, that can be installed with:
 curl -s https://get.nextflow.io | bash
 ```
 
-## Usage
+# Usage
 
 ```bash
 nextflow run BioinfoSupport/amr-tools/pipelines/asm-compare --ref=ref_assembly.fasta --fasta=assembly.fasta
 ```
 
+# Test the pipeline
 
+```bash
+nextflow run BioinfoSupport/amr-tools/pipelines/asm-compare -profile standard,test
+```

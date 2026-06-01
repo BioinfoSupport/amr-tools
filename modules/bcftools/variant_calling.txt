@@ -61,5 +61,3 @@ minimap2 -cx asm5 -z1000000 -p 0.1 -Y --cs -a "${NCBI_FASTA}" "${REF_FASTA}" \
 #  | bcftools view
   
   
-
-
