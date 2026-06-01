@@ -32,20 +32,3 @@ nextflow run BioinfoSupport/amr-tools/pipelines/asm-compare --ref=ref_assembly.f
 nextflow run BioinfoSupport/amr-tools/pipelines/asm-compare -profile standard,test
 ```
 
-
-
-# TODO
-
- - Add assemblies stats
- - Add alignment stats
- - Add HTML report
- - Add coverage analysis
- - Add IGV visualisation
- - Add pairwise comparison (like mummer)
- - Add pairwise comparison (like Mauve)
- 
- 
- 
- 
- 
- 

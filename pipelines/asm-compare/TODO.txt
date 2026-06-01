@@ -1,0 +1,13 @@
+
+ - Add assemblies stats
+ - Add alignment stats
+ - Add HTML report with igv.js
+ - Add coverage analysis
+ - Add IGV visualisation
+ - Add pairwise comparison (like mummer)
+ - Add pairwise comparison (like Mauve)
+ - Add option to give GTF annotations of the reference and annotate the VCF with the GENE and consequences of the mutations
+ - Add prokka annotation of the assemblies ?
+ - Add a 2-pass option to rotate the contigs before rerunning a second alignment
+ 
+ 
