@@ -25,9 +25,11 @@ workflow {
 		| BCFTOOLS_ASM5_MPILEUP
 
 		RMD_RENDER(
-			Channel.empty(),
-			file("${projectDir}/assets/report.qmd"),
-			file("${projectDir}/assets/report.qmd")
+			MINIMAP2_ALIGN_ASM5.out.bam
+				.combine(BCFTOOLS_ASM5_MPILEUP.out.txt,by:0)
+				.map({meta,bam,txt -> [meta,[bam,txt],"bam_file='${bam}',txt_file='${txt}'"]}),
+			file("${projectDir}/assets/bam_report.qmd"),
+			file("${projectDir}/assets/bam_report.qmd")
 		)
 
 	publish:
@@ -57,7 +59,7 @@ output {
 		path { m,x -> x >> "${m.sample_id}.txt"}
 	}	
 	html {
-		path { "reports/"}
+		path {  m,x -> x >> "${m.sample_id}.html"}
 	}
 	
 }

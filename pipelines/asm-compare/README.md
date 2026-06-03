@@ -29,6 +29,6 @@ nextflow run BioinfoSupport/amr-tools/pipelines/asm-compare --ref=ref_assembly.f
 # Test the pipeline
 
 ```bash
-nextflow run BioinfoSupport/amr-tools/pipelines/asm-compare -profile standard,test
+nextflow run BioinfoSupport/amr-tools/pipelines/asm-compare/main.nf -profile standard,test
 ```
 

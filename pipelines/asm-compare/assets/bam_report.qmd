@@ -6,8 +6,8 @@ toc: true
 embed-resources: true
 code-fold: true
 params:
-  bam_file: "../results/CP083077.bam"
-  txt_file: "../results/CP083077.txt"
+  bam_file: "../results/CP047704.1.bam"
+  txt_file: "../results/CP047704.1.txt"
 ---
 
 ```{r setup, include=FALSE}
@@ -84,7 +84,7 @@ bedpe <- cigarGrangesPairs(params$bam_file)
 muts <- read_tsv(
   params$txt_file,
   col_names = c("chrom", "pos", "change"),
-  show_col_types = FALSE
+  col_types = cols(pos="i",.default="c")
 ) |>
   mutate(
     ref = sub(">.*", "", change),
@@ -118,6 +118,7 @@ ggplot() +
 	geom_polygon(aes(x=value,y=seqnames,group=polygon_id),fill="lightgrey",color="black",data=grangesPairsPolygons(bedpe)) +
 	geom_segment(aes(x=1,xend=seqlengths,y=seqnames,yend=seqnames),linewidth = 2,data = as_tibble(seqinfo(bedpe$ref),rownames="seqnames")) +
 	geom_segment(aes(x=1,xend=seqlengths,y=seqnames,yend=seqnames),linewidth = 2,data = as_tibble(seqinfo(bedpe$query),rownames="seqnames")) +
+	geom_jitter(aes(y=chrom,x=pos+1L),data = muts,color="red",width=0,height=0.03) +
 	theme_bw() + 
 	xlab("Genomic position") + ylab("")
 ```
