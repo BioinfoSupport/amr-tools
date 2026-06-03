@@ -1,7 +1,8 @@
 
 
-include { MINIMAP2_ALIGN_ASM5 } from './modules/minimap2/align_asm5' 
-include { BCFTOOLS_ASM5_MPILEUP } from './modules/bcftools/asm5_mpileup' 
+include { MINIMAP2_ALIGN_ASM5   } from './modules/minimap2/align_asm5'
+include { BCFTOOLS_ASM5_MPILEUP } from './modules/bcftools/asm5_mpileup'
+include { RMD_RENDER            } from './modules/rmd/render'
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 
@@ -23,13 +24,19 @@ workflow {
 		| map({meta,bam -> [meta,params.ref,bam]})
 		| BCFTOOLS_ASM5_MPILEUP
 
+		RMD_RENDER(
+			Channel.empty(),
+			file("${projectDir}/assets/report.qmd"),
+			file("${projectDir}/assets/report.qmd")
+		)
+
 	publish:
 		bam = MINIMAP2_ALIGN_ASM5.out.bam
 		bai = MINIMAP2_ALIGN_ASM5.out.bai
 		mut_vcf = BCFTOOLS_ASM5_MPILEUP.out.vcf
 		mut_vcf_csi = BCFTOOLS_ASM5_MPILEUP.out.vcf_csi
 		mut_txt = BCFTOOLS_ASM5_MPILEUP.out.txt
-		html = Channel.empty()
+		html = RMD_RENDER.out.html
 }
 
 output {

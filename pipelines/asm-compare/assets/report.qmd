@@ -1,0 +1,140 @@
+---
+title: "Assembly Comparison"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+toc: true
+embed-resources: true
+params:
+  sample_id: "sample"
+  txt_file: "../results/CP083077.txt"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+library(tidyverse)
+library(GenomicAlignments)
+
+
+cigarGrangesPairs <- function(bam_file) {
+	bam <- BamFile(bam_file)
+	aln <- readGAlignments(bam,use.names = TRUE)
+	
+	ref_rg <- cigarRangesAlongReferenceSpace(
+			cigar(aln), pos = start(aln),
+		  ops = c("M", "=", "X"), reduce.ranges = FALSE,f=as.factor(seqnames(aln))
+		) |>
+		GRanges(seqinfo = seqinfo(bam))
+	
+	
+	qry_len <- cigarWidthAlongQuerySpace(cigar(aln), before.hard.clipping = TRUE)
+	qry_rg <- cigarRangesAlongQuerySpace(
+		  cigar(aln),
+		  ops = c("M", "=", "X"), reduce.ranges = FALSE,
+		  before.hard.clipping = TRUE
+		) |>
+		setNames(names(aln))
+	aln_idx <- rep(seq_along(aln),lengths(qry_rg))
+	
+	qry_rg <- GRanges(
+		qry_rg,
+		strand = rep(strand(aln),lengths(qry_rg)),
+		seqinfo = tibble(seqnames=names(aln),seqlengths=qry_len) |> distinct() |> as("Seqinfo")
+	)
+	ranges(qry_rg)[strand(qry_rg)=="-"] <- reflect(
+		ranges(qry_rg)[strand(qry_rg)=="-"],
+		IRanges(1,seqlengths(qry_rg)[as.integer(seqnames(qry_rg[strand(qry_rg)=="-"]))])
+	)
+	
+	DataFrame(aln_idx,ref = ref_rg,query = qry_rg)
+}
+
+
+
+grangesPairsPolygons <- function(p) {
+	bind_rows(
+		"r" = as_tibble(p$ref) |> tibble::rowid_to_column("polygon_id") |> bind_cols(aln_idx = p$aln_idx),
+		"q" = as_tibble(p$query) |> tibble::rowid_to_column("polygon_id") |> bind_cols(aln_idx = p$aln_idx),
+		.id = "source"
+	) |>
+		select(-width) |>
+		dplyr::rename("1"="start","2"="end") |>
+		pivot_longer(cols = c("1","2"),names_to = "order",names_transform = list(order=as.integer)) |>
+		mutate(order = case_when(
+			source=="r" ~ order,
+			source=="q" & strand!="-" ~ 5 - order,
+			source=="q" & strand=="-" ~ 2 + order,
+			TRUE ~ NA_integer_
+		)) |>
+		select(-strand,-source) |>
+		arrange(polygon_id,order)	
+}
+```
+
+
+
+```{r}
+p <- cigarGrangesPairs("../results/CP083077.bam")
+ggplot() + 
+	geom_polygon(aes(x=value,y=seqnames,group=polygon_id),fill="lightgrey",color="black",data=grangesPairsPolygons(p)) +
+	geom_segment(aes(x=1,xend=seqlengths,y=seqnames,yend=seqnames),linewidth = 2,data = as_tibble(seqinfo(p$ref),rownames="seqnames")) +
+	geom_segment(aes(x=1,xend=seqlengths,y=seqnames,yend=seqnames),linewidth = 2,data = as_tibble(seqinfo(p$query),rownames="seqnames")) +
+	theme_bw()
+```
+
+
+```{r}
+p <- cigarGrangesPairs("../results/CP083077.bam")
+
+as_tibble(p) |>
+	select(-ref.width,-query.width) |>
+	ggplot(aes(x=ref.start,xend=ref.end,y=if_else(query.strand=="-",query.end,query.start),yend=if_else(query.strand=="-",query.start,query.end))) + 
+		facet_grid(query.seqnames~ref.seqnames) +
+		geom_segment() +
+		theme_bw() + xlab("Reference") + ylab("Query")
+```
+
+
+
+# `r params$sample_id`
+
+```{r load}
+muts <- read_tsv(
+  params$txt_file,
+  col_names = c("chrom", "pos", "change"),
+  show_col_types = FALSE
+) |>
+  mutate(
+    ref = sub(">.*", "", change),
+    alt = sub(".*>", "", change),
+    type = if_else(nchar(ref) == 1 & nchar(alt) == 1, "SNP", "INDEL")
+  )
+```
+
+## Summary
+
+```{r summary}
+tibble(
+  Metric = c("Total mutations", "SNPs", "INDELs"),
+  Value  = c(nrow(muts), sum(muts$type == "SNP"), sum(muts$type == "INDEL"))
+) |> knitr::kable()
+```
+
+## Mutations per contig
+
+```{r barplot, fig.width=8, fig.height=4}
+muts |>
+  count(chrom, type) |>
+  ggplot(aes(x = chrom, y = n, fill = type)) +
+    geom_col() +
+    labs(x = "Contig", y = "Count", fill = "Type") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+## All mutations
+
+```{r table}
+muts |>
+  select(chrom, pos, change, type) |>
+  knitr::kable(col.names = c("Contig", "Position", "Change", "Type"))
+```
