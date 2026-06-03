@@ -1,11 +1,12 @@
 ---
-title: "Assembly Comparison"
+title: "Assembly Comparison Report"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 toc: true
 embed-resources: true
+code-fold: true
 params:
-  sample_id: "sample"
+  bam_file: "../results/CP083077.bam"
   txt_file: "../results/CP083077.txt"
 ---
 
@@ -50,10 +51,10 @@ cigarGrangesPairs <- function(bam_file) {
 
 
 
-grangesPairsPolygons <- function(p) {
+grangesPairsPolygons <- function(bedpe) {
 	bind_rows(
-		"r" = as_tibble(p$ref) |> tibble::rowid_to_column("polygon_id") |> bind_cols(aln_idx = p$aln_idx),
-		"q" = as_tibble(p$query) |> tibble::rowid_to_column("polygon_id") |> bind_cols(aln_idx = p$aln_idx),
+		"r" = as_tibble(bedpe$ref) |> tibble::rowid_to_column("polygon_id") |> bind_cols(aln_idx = bedpe$aln_idx),
+		"q" = as_tibble(bedpe$query) |> tibble::rowid_to_column("polygon_id") |> bind_cols(aln_idx = bedpe$aln_idx),
 		.id = "source"
 	) |>
 		select(-width) |>
@@ -70,34 +71,16 @@ grangesPairsPolygons <- function(p) {
 }
 ```
 
+# Data loading
 
-
-```{r}
-p <- cigarGrangesPairs("../results/CP083077.bam")
-ggplot() + 
-	geom_polygon(aes(x=value,y=seqnames,group=polygon_id),fill="lightgrey",color="black",data=grangesPairsPolygons(p)) +
-	geom_segment(aes(x=1,xend=seqlengths,y=seqnames,yend=seqnames),linewidth = 2,data = as_tibble(seqinfo(p$ref),rownames="seqnames")) +
-	geom_segment(aes(x=1,xend=seqlengths,y=seqnames,yend=seqnames),linewidth = 2,data = as_tibble(seqinfo(p$query),rownames="seqnames")) +
-	theme_bw()
-```
-
+|          |                     |
+|:---------|---------------------|
+| BAM      | `r params$bam_file` | 
+| Mutation | `r params$txt_file` |
 
 ```{r}
-p <- cigarGrangesPairs("../results/CP083077.bam")
+bedpe <- cigarGrangesPairs(params$bam_file)
 
-as_tibble(p) |>
-	select(-ref.width,-query.width) |>
-	ggplot(aes(x=ref.start,xend=ref.end,y=if_else(query.strand=="-",query.end,query.start),yend=if_else(query.strand=="-",query.start,query.end))) + 
-		facet_grid(query.seqnames~ref.seqnames) +
-		geom_segment() +
-		theme_bw() + xlab("Reference") + ylab("Query")
-```
-
-
-
-# `r params$sample_id`
-
-```{r load}
 muts <- read_tsv(
   params$txt_file,
   col_names = c("chrom", "pos", "change"),
@@ -106,35 +89,86 @@ muts <- read_tsv(
   mutate(
     ref = sub(">.*", "", change),
     alt = sub(".*>", "", change),
-    type = if_else(nchar(ref) == 1 & nchar(alt) == 1, "SNP", "INDEL")
+    type = case_when(
+    	nchar(ref) == 1 & nchar(alt) == 1 ~ "SNP",
+    	nchar(ref) < nchar(alt) ~ "INS",
+    	nchar(ref) > nchar(alt) ~ "DEL",
+    	TRUE ~ "Other"
+    )
   )
 ```
 
+# BAM alignment overview
+
+```{r}
+#| fig-height: 12
+#| fig-width: 12
+as_tibble(bedpe) |>
+	select(-ref.width,-query.width) |>
+	ggplot(aes(x=ref.start,xend=ref.end,y=if_else(query.strand=="-",query.end,query.start),yend=if_else(query.strand=="-",query.start,query.end))) + 
+		facet_grid(query.seqnames~ref.seqnames,space="free",scales="free") +
+		geom_segment() +
+		theme_bw() + xlab("Reference") + ylab("Query")
+```
+
+```{r}
+#| fig-height: 6
+#| fig-width: 12
+ggplot() + 
+	geom_polygon(aes(x=value,y=seqnames,group=polygon_id),fill="lightgrey",color="black",data=grangesPairsPolygons(bedpe)) +
+	geom_segment(aes(x=1,xend=seqlengths,y=seqnames,yend=seqnames),linewidth = 2,data = as_tibble(seqinfo(bedpe$ref),rownames="seqnames")) +
+	geom_segment(aes(x=1,xend=seqlengths,y=seqnames,yend=seqnames),linewidth = 2,data = as_tibble(seqinfo(bedpe$query),rownames="seqnames")) +
+	theme_bw() + 
+	xlab("Genomic position") + ylab("")
+```
+
+## Gaps
+
+### Reference gaps
+
+```{r}
+local({
+	ref_gaps <- gaps(bedpe$ref,ignore.strand=TRUE)
+	tibble(
+		pos = as.character(ref_gaps),
+		width = width(ref_gaps)
+	)
+}) |>
+	knitr::kable()
+```
+
+### Query gaps
+
+```{r}
+local({
+	qry_gaps <- gaps(bedpe$query,ignore.strand=TRUE)
+	tibble(
+		pos = as.character(qry_gaps),
+		width = width(qry_gaps)
+	)
+}) |>
+	knitr::kable()
+```
+
+# Mutations
+
 ## Summary
 
-```{r summary}
-tibble(
-  Metric = c("Total mutations", "SNPs", "INDELs"),
-  Value  = c(nrow(muts), sum(muts$type == "SNP"), sum(muts$type == "INDEL"))
-) |> knitr::kable()
+```{r mut_summary}
+muts |>
+	group_by("Mutation type"=type) |>
+	dplyr::count() |>
+	knitr::kable()
 ```
 
 ## Mutations per contig
 
-```{r barplot, fig.width=8, fig.height=4}
+```{r mut_barplot, fig.width=8, fig.height=4}
 muts |>
-  count(chrom, type) |>
+  dplyr::count(chrom, type) |>
   ggplot(aes(x = chrom, y = n, fill = type)) +
     geom_col() +
     labs(x = "Contig", y = "Count", fill = "Type") +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 30, hjust = 1))
-```
-
-## All mutations
-
-```{r table}
-muts |>
-  select(chrom, pos, change, type) |>
-  knitr::kable(col.names = c("Contig", "Position", "Change", "Type"))
 ```
