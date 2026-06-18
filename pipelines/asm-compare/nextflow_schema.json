@@ -17,6 +17,12 @@
 			"exists": true,
 			"pattern": "^\\S+\\.(fasta|fa|fna)$",
 			"description": "Path to FASTA file containing reference assembly contigs"
+		},
+
+		"no_query_rotation": {
+			"type": "boolean",
+			"description": "Set if the query should not be rotated in a preliminary step",
+			"default": false
 		}
 
 	}

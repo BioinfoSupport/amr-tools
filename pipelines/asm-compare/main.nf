@@ -57,7 +57,7 @@ workflow {
 				[[sample_id:id],ref,it]
 		})
 
-		if (params.rotate_query) {
+		if (!params.no_query_rotation) {
 			query_ch = ROTATE_QUERIES(query_ch)
 		}
 
@@ -78,7 +78,7 @@ workflow {
 		)
 
 	publish:
-		query_fa = query_ch.map({m,r,q -> [m,q]})
+		rotated_query_fa = query_ch.filter({!params.no_query_rotation}).map({m,r,q -> [m,q]})
 		bam = MINIMAP2_ALIGN_ASM5.out.bam
 		bai = MINIMAP2_ALIGN_ASM5.out.bai
 		mut_vcf = BCFTOOLS_ASM5_MPILEUP.out.vcf
@@ -88,8 +88,8 @@ workflow {
 }
 
 output {
-	query_fa {
-		path { m,x -> x >> "${m.sample_id}.fasta"}
+	rotated_query_fa {
+		path { m,x -> x >> "${m.sample_id}.rotated.fasta"}
 	}
 	bam {
 		path { m,x -> x >> "${m.sample_id}.bam"}
