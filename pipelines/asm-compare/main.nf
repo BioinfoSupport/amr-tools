@@ -6,22 +6,67 @@ include { RMD_RENDER            } from './modules/rmd/render'
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 
+process ROTATE_FASTA {
+	  container "registry.gitlab.unige.ch/amr-genomics/rscript:v2"
+    memory '8 GB'
+    cpus 1
+    time '30 min'
+    input:
+    		tuple(val(meta),path("query.fasta"),path("aln.bam"))
+    		path(extra)
+    output:
+        tuple(val(meta),path('rotated_query.fasta'))
+    script:
+				"""
+				#!/usr/bin/env Rscript
+				source("assets/lib_bam.R")
+				rotate_queries("query.fasta","aln.bam") |>
+					writeXStringSet("rotated_query.fasta")
+				"""
+}
+
+
+workflow ROTATE_QUERIES {
+	take:
+		query_ch
+	main:
+		query_ch | MINIMAP2_ALIGN_ASM5
+		
+		def rotated_query_ch = ROTATE_FASTA(
+			query_ch
+			.map({m,r,q -> [m,q]})
+			.combine(MINIMAP2_ALIGN_ASM5.out.bam,by:0),
+			file("${projectDir}/assets")
+		)
+		.combine(query_ch,by:0)
+		.map({m,rq,r,q -> [m,r,rq]})
+	emit:
+		rotated_queries = rotated_query_ch
+}
+
+
 workflow {
 	main:
 		// Validate parameters and print summary of supplied ones
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
+		def ref = file(params.ref)
 		def query_ch = Channel.fromPath(params.query).map({
 				def id = it.name.replaceAll(/\.(fasta|fna|fa)$/,'')
-				[[sample_id:id],params.ref,it]
+				[[sample_id:id],ref,it]
 		})
 
-		query_ch 
+		if (params.rotate_query) {
+			query_ch = ROTATE_QUERIES(query_ch)
+		}
+
+		// Map (rotated) queries to REF
+		query_ch
 		| MINIMAP2_ALIGN_ASM5
 		
 		MINIMAP2_ALIGN_ASM5.out.bam
-		| map({meta,bam -> [meta,params.ref,bam]})
+		| map({meta,bam -> [meta,ref,bam]})
 		| BCFTOOLS_ASM5_MPILEUP
 
 		RMD_RENDER(
@@ -29,10 +74,11 @@ workflow {
 				.combine(BCFTOOLS_ASM5_MPILEUP.out.txt,by:0)
 				.map({meta,bam,txt -> [meta,[bam,txt],"bam_file='${bam}',txt_file='${txt}'"]}),
 			file("${projectDir}/assets/bam_report.qmd"),
-			file("${projectDir}/assets/bam_report.qmd")
+			file("${projectDir}/assets")
 		)
 
 	publish:
+		query_fa = query_ch.map({m,r,q -> [m,q]})
 		bam = MINIMAP2_ALIGN_ASM5.out.bam
 		bai = MINIMAP2_ALIGN_ASM5.out.bai
 		mut_vcf = BCFTOOLS_ASM5_MPILEUP.out.vcf
@@ -42,7 +88,9 @@ workflow {
 }
 
 output {
-
+	query_fa {
+		path { m,x -> x >> "${m.sample_id}.fasta"}
+	}
 	bam {
 		path { m,x -> x >> "${m.sample_id}.bam"}
 	}

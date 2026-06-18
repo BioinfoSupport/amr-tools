@@ -12,63 +12,7 @@ params:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
-library(tidyverse)
-library(GenomicAlignments)
-
-
-cigarGrangesPairs <- function(bam_file) {
-	bam <- BamFile(bam_file)
-	aln <- readGAlignments(bam,use.names = TRUE)
-	
-	ref_rg <- cigarRangesAlongReferenceSpace(
-			cigar(aln), pos = start(aln),
-		  ops = c("M", "=", "X"), reduce.ranges = FALSE,f=as.factor(seqnames(aln))
-		) |>
-		GRanges(seqinfo = seqinfo(bam))
-	
-	
-	qry_len <- cigarWidthAlongQuerySpace(cigar(aln), before.hard.clipping = TRUE)
-	qry_rg <- cigarRangesAlongQuerySpace(
-		  cigar(aln),
-		  ops = c("M", "=", "X"), reduce.ranges = FALSE,
-		  before.hard.clipping = TRUE
-		) |>
-		setNames(names(aln))
-	aln_idx <- rep(seq_along(aln),lengths(qry_rg))
-	
-	qry_rg <- GRanges(
-		qry_rg,
-		strand = rep(strand(aln),lengths(qry_rg)),
-		seqinfo = tibble(seqnames=names(aln),seqlengths=qry_len) |> distinct() |> as("Seqinfo")
-	)
-	ranges(qry_rg)[strand(qry_rg)=="-"] <- reflect(
-		ranges(qry_rg)[strand(qry_rg)=="-"],
-		IRanges(1,seqlengths(qry_rg)[as.integer(seqnames(qry_rg[strand(qry_rg)=="-"]))])
-	)
-	
-	DataFrame(aln_idx,ref = ref_rg,query = qry_rg)
-}
-
-
-
-grangesPairsPolygons <- function(bedpe) {
-	bind_rows(
-		"r" = as_tibble(bedpe$ref) |> tibble::rowid_to_column("polygon_id") |> bind_cols(aln_idx = bedpe$aln_idx),
-		"q" = as_tibble(bedpe$query) |> tibble::rowid_to_column("polygon_id") |> bind_cols(aln_idx = bedpe$aln_idx),
-		.id = "source"
-	) |>
-		select(-width) |>
-		dplyr::rename("1"="start","2"="end") |>
-		pivot_longer(cols = c("1","2"),names_to = "order",names_transform = list(order=as.integer)) |>
-		mutate(order = case_when(
-			source=="r" ~ order,
-			source=="q" & strand!="-" ~ 5 - order,
-			source=="q" & strand=="-" ~ 2 + order,
-			TRUE ~ NA_integer_
-		)) |>
-		select(-strand,-source) |>
-		arrange(polygon_id,order)	
-}
+source("assets/lib_bam.R")
 ```
 
 # Data loading
@@ -79,7 +23,10 @@ grangesPairsPolygons <- function(bedpe) {
 | Mutation | `r params$txt_file` |
 
 ```{r}
-bedpe <- cigarGrangesPairs(params$bam_file)
+
+bedpe <- BamFile(params$bam_file) |>
+	readGAlignments(bam,use.names = TRUE) |>
+	gaCigarBedpe()
 
 muts <- read_tsv(
   params$txt_file,
@@ -115,7 +62,7 @@ as_tibble(bedpe) |>
 #| fig-height: 6
 #| fig-width: 12
 ggplot() + 
-	geom_polygon(aes(x=value,y=seqnames,group=polygon_id),fill="lightgrey",color="black",data=grangesPairsPolygons(bedpe)) +
+	geom_polygon(aes(x=value,y=seqnames,group=polygon_id),fill="lightgrey",color="black",data=bedpePolygons(bedpe)) +
 	geom_segment(aes(x=1,xend=seqlengths,y=seqnames,yend=seqnames),linewidth = 2,data = as_tibble(seqinfo(bedpe$ref),rownames="seqnames")) +
 	geom_segment(aes(x=1,xend=seqlengths,y=seqnames,yend=seqnames),linewidth = 2,data = as_tibble(seqinfo(bedpe$query),rownames="seqnames")) +
 	geom_jitter(aes(y=chrom,x=pos+1L),data = muts,color="red",width=0,height=0.03) +
