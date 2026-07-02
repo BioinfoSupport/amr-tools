@@ -162,6 +162,7 @@ workflow AMR_ANNOT {
 	    multireport_folder = MULTIREPORT.out.folder
     	multireport_html   = MULTIREPORT.out.html.map({m,x -> x})
     	multireport_xlsx   = MULTIREPORT.out.xlsx.map({m,x -> x})
+    	multireport_tsv    = MULTIREPORT.out.tsv.map({m,x -> x})
 }
 
 

@@ -12,6 +12,7 @@ process MULTITABLE {
 		each path("lib_typing.R")
     output:
         tuple val(meta), path('multitable.xlsx'), emit:'xlsx'
+        tuple val(meta), path('multitable.tsv'), emit:'tsv'
     script:
         """
 		#!/usr/bin/env Rscript
@@ -25,6 +26,7 @@ process MULTITABLE {
 		)
 		tbl\$contigs <- left_join(tbl\$contigs,select(tbl\$assemblies,sample_id,assembler_name,species_name,mlst_type),by=c('sample_id','assembler_name'))
 		openxlsx::write.xlsx(tbl,file="multitable.xlsx")
+		readr::write_tsv(tbl,file="multitable.tsv")
         """
 }
 
@@ -83,6 +85,7 @@ workflow MULTIREPORT {
 
 	emit:
 		folder = ORGANIZE_FILES.out
-		html   = RMD_RENDER.out  // channel: [ meta, path(html) ]
-		xlsx   = MULTITABLE.out  // channel: [ meta, path(xlsx) ]			
+		html   = RMD_RENDER.out       // channel: [ meta, path(html) ]
+		xlsx   = MULTITABLE.out.xlsx  // channel: [ meta, path(xlsx) ]
+		tsv    = MULTITABLE.out.tsv   // channel: [ meta, path(tsv) ]
 }

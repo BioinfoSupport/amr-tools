@@ -115,6 +115,7 @@ workflow {
 		orgfinder            = AMR_ANNOT.out.orgfinder
 		amr_multireport_html = AMR_ANNOT.out.multireport_html.ifEmpty([])
 		amr_multireport_xlsx = AMR_ANNOT.out.multireport_xlsx.ifEmpty([])
+		amr_multireport_tsv  = AMR_ANNOT.out.multireport_tsv.ifEmpty([])
 }
 
 output {
@@ -203,6 +204,9 @@ output {
 	amr_multireport_xlsx {
 		path { "reports/"}
 	}
+	amr_multireport_tsv {
+		path { "reports/"}
+	}	
 
 }
 
