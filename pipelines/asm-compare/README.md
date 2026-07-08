@@ -5,11 +5,13 @@
 
 The pipeline steps include:
 
-  1) Map the two assemblies with `minimap2 -x asm5` and produce an indexed `bam` file
-
-  2) Generate a VCF listing the mutations with `bcftools mpileup`
+  1) Circular rotation of the query sequences to match with best reference sequence hit (this step can be skip with option --no_query_rotation)
   
-  3) Generate a simple 3 columns table list of mutations from the VCF
+  2) Map query assemblies to the reference genome with `minimap2 -x asm5` and produce an indexed `bam` file
+
+  3) Generate a VCF listing the mutations with `bcftools mpileup`
+  
+  4) Generate a simple 3 columns table list of mutations from the VCF
 
 
 # Installation

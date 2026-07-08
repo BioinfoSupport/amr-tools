@@ -28,7 +28,7 @@ process ROTATE_FASTA {
 
 workflow ROTATE_QUERIES {
 	take:
-		query_ch
+		query_ch  // [meta, path('ref.fasta'), path('qry.fasta')]
 	main:
 		query_ch | MINIMAP2_ALIGN_ASM5
 		
