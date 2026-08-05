@@ -6,8 +6,10 @@ toc: true
 embed-resources: true
 code-fold: true
 params:
-  bam_file: "../results/CP047704.1.bam"
-  txt_file: "../results/CP047704.1.txt"
+  #bam_file: "../results/CP047704.1.bam"
+  #txt_file: "../results/CP047704.1.txt"
+  bam_file: "/Users/prados/Downloads/docker/run1/work/6c/fd40de806a450c73690e9bfd093096/out.bam"
+  txt_file: "/Users/prados/Downloads/docker/run1/work/2d/3dec8fe687782e7b3ba80f70cfb785/mutations.txt"
 ---
 
 ```{r setup, include=FALSE}
@@ -45,7 +47,7 @@ muts <- read_tsv(
 ```
 
 
-# Input Genomes Sizes
+# Genomes Sizes
 
 ## Reference
 
@@ -60,26 +62,70 @@ seqinfo(bedpe$ref) |>
 
 ```{r}
 seqinfo(bedpe$query) |> 
-	as_tibble(rownames="seqname") %>% select(seqname,seqlengths) |>
+	as_tibble(rownames="seqname") %>% 
+	select(seqname,seqlengths) |>
 	arrange(desc(seqlengths)) |>
 	knitr::kable()
 ```
 
 
 
+# Queries best mapping
+
+For each query, determine the reference sequence it covers most.
+
+```{r}
+	aln <- readGAlignments(params$bam_file,use.names=TRUE)
+	best_qry_hits <- split(aln,names(aln)) |> 
+		lapply(\(e) sum(coverage(e)>0)) |>
+		enframe(name="query_id") |>
+		unnest_longer(value,indices_to="ref_id",values_to="coverage") |>
+		group_by(query_id) |>
+		slice_max(coverage,n=1,with_ties=FALSE) |>
+		arrange(desc(coverage)) %>% 
+		left_join(seqinfo(bedpe$ref) %>% as_tibble(rownames="seqname") %>% select(ref_id=seqname,ref_len=seqlengths),by="ref_id") %>% 
+		left_join(seqinfo(bedpe$query) %>% as_tibble(rownames="seqname") %>% select(query_id=seqname,query_len=seqlengths),by="query_id") %>% 
+		relocate(query_id,best_ref_hit=ref_id,query_len,ref_len,coverage)
+	
+	best_qry_hits |>
+		knitr::kable()
+```
+
+
 
 # BAM alignment overview
 
 ```{r}
-#| fig-height: 12
-#| fig-width: 12
+#| fig-height: 16
+#| fig-width: 16
 as_tibble(bedpe) |>
 	select(-ref.width,-query.width) |>
-	ggplot(aes(x=ref.start,xend=ref.end,y=if_else(query.strand=="-",query.end,query.start),yend=if_else(query.strand=="-",query.start,query.end))) + 
+	ggplot(aes(
+		x = ref.start,
+		xend = ref.end,
+		y = if_else(query.strand=="-",query.end,query.start),
+		yend = if_else(query.strand=="-",query.start,query.end)
+	)) + 
 		facet_grid(query.seqnames~ref.seqnames,space="free",scales="free") +
+		scale_x_continuous(labels = scales::label_number(scale_cut=scales::cut_short_scale())) +
+		scale_y_continuous(labels = scales::label_number(scale_cut=scales::cut_short_scale())) +
 		geom_segment() +
-		theme_bw() + xlab("Reference") + ylab("Query")
+		theme_bw() + 
+		theme(panel.spacing = unit(0,"mm")) +
+		theme(strip.text.y = element_text(angle=0)) +
+		xlab("Reference") + ylab("Query")
 ```
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 #| fig-height: 16
