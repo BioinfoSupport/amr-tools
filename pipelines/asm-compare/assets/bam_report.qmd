@@ -23,7 +23,6 @@ source("assets/lib_bam.R")
 | Mutation | `r params$txt_file` |
 
 ```{r}
-
 bedpe <- BamFile(params$bam_file) |>
 	readGAlignments(bam,use.names = TRUE) |>
 	gaCigarBedpe()
@@ -61,13 +60,20 @@ as_tibble(bedpe) |>
 ```{r}
 #| fig-height: 6
 #| fig-width: 12
+
+bedpe_meta <- tibble(
+	aln_idx = bedpe$aln_idx,
+	ref_seq = as.factor(seqnames(bedpe$ref)),
+	qry_seq = as.factor(seqnames(bedpe$query))
+)
 ggplot() + 
-	geom_polygon(aes(x=value,y=seqnames,group=polygon_id),fill="lightgrey",color="black",data=bedpePolygons(bedpe)) +
-	geom_segment(aes(x=1,xend=seqlengths,y=seqnames,yend=seqnames),linewidth = 2,data = as_tibble(seqinfo(bedpe$ref),rownames="seqnames")) +
-	geom_segment(aes(x=1,xend=seqlengths,y=seqnames,yend=seqnames),linewidth = 2,data = as_tibble(seqinfo(bedpe$query),rownames="seqnames")) +
-	geom_jitter(aes(y=chrom,x=pos+1L),data = muts,color="red",width=0,height=0.03) +
+	facet_grid(qry_seq~ref_seq,scales="free_x",space="free_x") +
+	geom_polygon(aes(x=value,y=source,group=aln_idx),fill="lightgrey",color="black",data=bedpePolygons(bedpe) |> left_join(bedpe_meta,by="aln_idx")) +
+	geom_segment(aes(x=1,xend=seqlengths,y="ref",yend="ref"),linewidth = 2,data = as_tibble(seqinfo(bedpe$ref),rownames="seqnames")) +
+	geom_segment(aes(x=1,xend=seqlengths,y="qry",yend="qry"),linewidth = 2,data = as_tibble(seqinfo(bedpe$query),rownames="seqnames")) +
+	geom_jitter(aes(y="ref",x=pos+1L),data = muts |> dplyr::rename(ref_seq=chrom),color="red",width=0,height=0.03) +
 	theme_bw() + 
-	xlab("Genomic position") + ylab("")
+	xlab("Position on Reference Genome") + ylab("")
 ```
 
 ## Gaps

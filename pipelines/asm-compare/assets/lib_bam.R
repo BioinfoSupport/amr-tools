@@ -37,23 +37,24 @@ gaCigarBedpe <- function(aln) {
 
 
 
+# Generate one polygon per alignment
 bedpePolygons <- function(bedpe) {
 	bind_rows(
-		"r" = as_tibble(bedpe$ref) |> tibble::rowid_to_column("polygon_id") |> bind_cols(aln_idx = bedpe$aln_idx),
-		"q" = as_tibble(bedpe$query) |> tibble::rowid_to_column("polygon_id") |> bind_cols(aln_idx = bedpe$aln_idx),
+		"ref" = as_tibble(bedpe$ref) |> bind_cols(aln_idx = bedpe$aln_idx),
+		"qry" = as_tibble(bedpe$query) |> bind_cols(aln_idx = bedpe$aln_idx),
 		.id = "source"
 	) |>
 		select(-width) |>
-		dplyr::rename("1"="start","2"="end") |>
-		pivot_longer(cols = c("1","2"),names_to = "order",names_transform = list(order=as.integer)) |>
+		mutate(source = factor(source,c("ref","qry"))) |>
+		pivot_longer(cols = c("start","end"),names_to = "order",names_transform = list(order=~as.integer(factor(.,c("start","end"))))) |>
 		mutate(order = case_when(
-			source=="r" ~ order,
-			source=="q" & strand!="-" ~ 5 - order,
-			source=="q" & strand=="-" ~ 2 + order,
+			source=="ref" ~ order,
+			source=="qry" & strand!="-" ~ 5 - order,
+			source=="qry" & strand=="-" ~ 2 + order,
 			TRUE ~ NA_integer_
 		)) |>
-		select(-strand,-source) |>
-		arrange(polygon_id,order)	
+		select(-strand) |>
+		arrange(aln_idx,order)
 }
 
 
