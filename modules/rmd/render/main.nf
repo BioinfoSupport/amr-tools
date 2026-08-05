@@ -16,7 +16,7 @@ process RMD_RENDER {
 				rmarkdown::render(
 				  knit_root_dir = getwd(),
 				  'report_template.Rmd',
-				  ${if (render_params==null) {""} else {"params = list(${render_params}),"}}
+				  ${(render_params==null)?"":"params = list(${render_params}),"}
 					output_dir = getwd(),
 					output_file = "report.html"
 				)
