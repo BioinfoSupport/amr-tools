@@ -2,7 +2,7 @@
 
 include { MINIMAP2_ALIGN_ASM5   } from './modules/minimap2/align_asm5'
 include { BCFTOOLS_ASM5_MPILEUP } from './modules/bcftools/asm5_mpileup'
-include { RMD_RENDER            } from './modules/rmd/render'
+include { QUARTO_RENDER         } from './modules/quarto/render'
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 
@@ -69,10 +69,10 @@ workflow {
 		| map({meta,bam -> [meta,ref,bam]})
 		| BCFTOOLS_ASM5_MPILEUP
 
-		RMD_RENDER(
+		QUARTO_RENDER(
 			MINIMAP2_ALIGN_ASM5.out.bam
 				.combine(BCFTOOLS_ASM5_MPILEUP.out.txt,by:0)
-				.map({meta,bam,txt -> [meta,[bam,txt],"bam_file='${bam}',txt_file='${txt}'"]}),
+				.map({meta,bam,txt -> [meta,[bam,txt],"-P 'bam_file:${bam}' -P 'txt_file:${txt}'"]}),
 			file("${projectDir}/assets/bam_report.qmd"),
 			file("${projectDir}/assets")
 		)
@@ -84,7 +84,7 @@ workflow {
 		mut_vcf = BCFTOOLS_ASM5_MPILEUP.out.vcf
 		mut_vcf_csi = BCFTOOLS_ASM5_MPILEUP.out.vcf_csi
 		mut_txt = BCFTOOLS_ASM5_MPILEUP.out.txt
-		html = RMD_RENDER.out.html
+		html = QUARTO_RENDER.out.html
 }
 
 output {

@@ -45,19 +45,23 @@ muts <- read_tsv(
 ```
 
 
-# Input Sequence Sizes
+# Input Genomes Sizes
 
 ## Reference
 
 ```{r}
-seqinfo(bedpe$ref) |> as_tibble(rownames="seqname") %>% select(seqname,seqlengths) |>
+seqinfo(bedpe$ref) |> 
+	as_tibble(rownames="seqname") %>% select(seqname,seqlengths) |>
+	arrange(desc(seqlengths)) |>
 	knitr::kable()
 ```
 
 ## Query
 
 ```{r}
-seqinfo(bedpe$query) |> as_tibble(rownames="seqname") %>% select(seqname,seqlengths) |>
+seqinfo(bedpe$query) |> 
+	as_tibble(rownames="seqname") %>% select(seqname,seqlengths) |>
+	arrange(desc(seqlengths)) |>
 	knitr::kable()
 ```
 
