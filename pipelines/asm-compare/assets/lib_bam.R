@@ -25,7 +25,7 @@ gaCigarBedpe <- function(aln) {
 	qry_rg <- GRanges(
 		qry_rg,
 		strand = rep(strand(aln),lengths(qry_rg)),
-		seqinfo = tibble(seqnames=names(aln),seqlengths=qry_len) |> distinct() |> as("Seqinfo")
+		seqinfo = data.frame(seqnames=names(aln),seqlengths=qry_len,stringsAsFactors = FALSE) |> distinct() |> as("Seqinfo")
 	)
 	ranges(qry_rg)[strand(qry_rg)=="-"] <- reflect(
 		ranges(qry_rg)[strand(qry_rg)=="-"],
