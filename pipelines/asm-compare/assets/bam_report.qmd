@@ -58,8 +58,8 @@ as_tibble(bedpe) |>
 ```
 
 ```{r}
-#| fig-height: 6
-#| fig-width: 12
+#| fig-height: 16
+#| fig-width: 16
 
 bedpe_meta <- tibble(
 	aln_idx = bedpe$aln_idx,
@@ -69,8 +69,8 @@ bedpe_meta <- tibble(
 ggplot() + 
 	facet_grid(qry_seq~ref_seq,scales="free_x",space="free_x") +
 	geom_polygon(aes(x=value,y=source,group=aln_idx),fill="lightgrey",color="black",data=bedpePolygons(bedpe) |> left_join(bedpe_meta,by="aln_idx")) +
-	geom_segment(aes(x=1,xend=seqlengths,y="ref",yend="ref"),linewidth = 2,data = as_tibble(seqinfo(bedpe$ref),rownames="seqnames")) +
-	geom_segment(aes(x=1,xend=seqlengths,y="qry",yend="qry"),linewidth = 2,data = as_tibble(seqinfo(bedpe$query),rownames="seqnames")) +
+	geom_segment(aes(x=1,xend=seqlengths,y="ref",yend="ref"),linewidth = 2,data = as_tibble(seqinfo(bedpe$ref),rownames="ref_seq")) +
+	geom_segment(aes(x=1,xend=seqlengths,y="qry",yend="qry"),linewidth = 2,data = as_tibble(seqinfo(bedpe$query),rownames="qry_seq")) +
 	geom_jitter(aes(y="ref",x=pos+1L),data = muts |> dplyr::rename(ref_seq=chrom),color="red",width=0,height=0.03) +
 	theme_bw() + 
 	xlab("Position on Reference Genome") + ylab("")
