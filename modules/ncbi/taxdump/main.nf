@@ -2,7 +2,7 @@
 
 process NCBI_TAXDUMP_DOWNLOAD {
 	  output:
-			tuple path('taxdump/')
+			path('taxdump/')
 	  script:
 	    """
 	    mkdir -p taxdump \
