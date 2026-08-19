@@ -1,8 +1,8 @@
 
 process NANOPLOT {
     container 'quay.io/biocontainers/nanoplot:1.41.0--pyhdfd78af_0'
-    cpus = 2
-    memory = '4 GB'
+    cpus 2
+    memory '4 GB'
     time '1h'
     input:
     	tuple val(meta), path("reads.fastq.gz")

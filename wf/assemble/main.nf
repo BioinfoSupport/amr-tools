@@ -17,57 +17,51 @@ workflow ASSEMBLE {
 		fqs_ch    // channel: [ val(meta), path(short_reads) ]
 		fql_ch    // channel: [ val(meta), path(long_reads) ]
 	main:
-
-		def assemblies = [fasta:Channel.empty(),dir:Channel.empty()]
-		switch(assembler_name) {
-			
-			// Long reads assemblers
-			case 'long_flye':
-				LONG_FLYE(fql_ch)
-				assemblies = [fasta:LONG_FLYE.out.fasta,dir:LONG_FLYE.out.dir]
-				break
-			case 'long_flye_medaka':
-				LONG_FLYE_MEDAKA(fql_ch)
-				assemblies = [fasta:LONG_FLYE_MEDAKA.out.fasta,dir:LONG_FLYE_MEDAKA.out.dir]
-				break
-			case 'long_unicycler':
-				LONG_UNICYCLER(Channel.empty(),fql_ch)
-				assemblies = [fasta:LONG_UNICYCLER.out.fasta,dir:LONG_UNICYCLER.out.dir]
-				break
-			case 'long_hybracter':
-				LONG_HYBRACTER(Channel.empty(),fql_ch)
-				assemblies = [fasta:LONG_HYBRACTER.out.fasta,dir:LONG_HYBRACTER.out.dir]
-				break
-				
-			// Short reads assemblers
-			case 'short_unicycler':
-				SHORT_UNICYCLER(fqs_ch,Channel.empty())
-				assemblies = [fasta:SHORT_UNICYCLER.out.fasta,dir:SHORT_UNICYCLER.out.dir]
-				break
-			case 'short_spades':
-				SHORT_SPADES(fqs_ch,Channel.empty())
-				assemblies = [fasta:SHORT_SPADES.out.fasta,dir:SHORT_SPADES.out.dir]
-				break
-				
-			// Hybrid assemblers
-			case 'hybrid_unicycler':
-				HYBRID_UNICYCLER(fqs_ch,fql_ch)
-				assemblies = [fasta:HYBRID_UNICYCLER.out.fasta,dir:HYBRID_UNICYCLER.out.dir]
-				break
-			case 'hybrid_hybracter':
-				HYBRID_HYBRACTER(fqs_ch,fql_ch)
-				assemblies = [fasta:HYBRID_HYBRACTER.out.fasta,dir:HYBRID_HYBRACTER.out.dir]
-				break
-			case 'hybrid_flye_medaka_pilon':
-				HYBRID_FLYE_MEDAKA_PILON(fqs_ch,fql_ch)
-				assemblies = [fasta:HYBRID_FLYE_MEDAKA_PILON.out.fasta,dir:HYBRID_FLYE_MEDAKA_PILON.out.dir]
-				break
-			default:
-				error "Unknown assembler name :${assembler_name}"
+		def assemblies_fasta = Channel.empty()
+		def assemblies_dir   = Channel.empty()
+		
+		if (assembler_name == 'long_flye') {
+			LONG_FLYE(fql_ch)
+			assemblies_fasta = LONG_FLYE.out.fasta
+			assemblies_dir   = LONG_FLYE.out.dir
+		} else if (assembler_name == 'long_flye_medaka') {
+			LONG_FLYE_MEDAKA(fql_ch)
+			assemblies_fasta = LONG_FLYE_MEDAKA.out.fasta
+			assemblies_dir   = LONG_FLYE_MEDAKA.out.dir
+		} else if (assembler_name == 'long_unicycler') {
+			LONG_UNICYCLER(Channel.empty(),fql_ch)
+			assemblies_fasta = LONG_UNICYCLER.out.fasta
+			assemblies_dir   = LONG_UNICYCLER.out.dir
+		} else if (assembler_name == 'long_hybracter') {
+			LONG_HYBRACTER(Channel.empty(),fql_ch)
+			assemblies_fasta = LONG_HYBRACTER.out.fasta
+			assemblies_dir   = LONG_HYBRACTER.out.dir
+		} else if (assembler_name == 'short_unicycler') {
+			SHORT_UNICYCLER(fqs_ch,Channel.empty())
+			assemblies_fasta = SHORT_UNICYCLER.out.fasta
+			assemblies_dir   = SHORT_UNICYCLER.out.dir
+		} else if (assembler_name == 'short_spades') {
+			SHORT_SPADES(fqs_ch,Channel.empty())
+			assemblies_fasta = SHORT_SPADES.out.fasta
+			assemblies_dir   = SHORT_SPADES.out.dir
+		} else if (assembler_name == 'hybrid_unicycler') {
+			HYBRID_UNICYCLER(fqs_ch,fql_ch)
+			assemblies_fasta = HYBRID_UNICYCLER.out.fasta
+			assemblies_dir   = HYBRID_UNICYCLER.out.dir
+		} else if (assembler_name == 'hybrid_hybracter') {
+			HYBRID_HYBRACTER(fqs_ch,fql_ch)
+			assemblies_fasta = HYBRID_HYBRACTER.out.fasta
+			assemblies_dir   = HYBRID_HYBRACTER.out.dir
+		} else if (assembler_name == 'hybrid_flye_medaka_pilon') {
+			HYBRID_FLYE_MEDAKA_PILON(fqs_ch,fql_ch)
+			assemblies_fasta = HYBRID_FLYE_MEDAKA_PILON.out.fasta
+			assemblies_dir   = HYBRID_FLYE_MEDAKA_PILON.out.dir
+		} else {
+			error "Unknown assembler name :${assembler_name}"
 		}
 		
 	emit:
-		fasta = assemblies.fasta
-		dir = assemblies.dir
+		fasta = assemblies_fasta
+		dir = assemblies_dir
 }
 

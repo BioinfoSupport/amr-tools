@@ -15,7 +15,7 @@ process CHECKM2_PREDICT {
 	        --input 'assembly.fasta' \\
 	        --output-directory 'output' \\
 	        --threads ${task.cpus} \\
-	        --database_path ${db}/CheckM2_database/uniref100.KO.1.dmnd \\
+	        --database_path db/CheckM2_database/uniref100.KO.1.dmnd \\
 	        ${task.ext.args?:''}
     """
 

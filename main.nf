@@ -12,7 +12,6 @@ include { IDENTITY as COPY_LONG_READS                 } from './modules/identity
 // ------------------------------------------------------------------
 // Main entry point when running the pipeline from command line
 // ------------------------------------------------------------------
-import Samples
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 
@@ -37,10 +36,10 @@ workflow {
 			| COPY_LONG_READS
 
 		// CONVERT long_reads given in BAM/CRAM format into FASTQ format
-		lr_ch = lr_ch.branch({meta,f -> 
+		lr_ch = lr_ch.branch {meta,f -> 
 			bam: f.name =~ /\.(bam|cram)$/
 			fq: true
-		})
+		}
 		lr_ch = lr_ch.fq.mix(CONVERT_LONG_BAM_TO_FASTQ(lr_ch.bam))
 
 		// Filter reads
@@ -58,10 +57,10 @@ workflow {
 		
 		// Run denovo assembly process when 
 		// Determine assemblies that are done and thus that have to be run
-		def asm_ch = samples.branch({
+		def asm_ch = samples.branch {
 			done: it.assembly_fasta
 			todo: true
-		})
+		}
 		asm_ch.done.map({[it.subMap('sample_id'),it.assembly_fasta]}) 
 		| COPY_ASSEMBLY_FASTA
 		ASSEMBLE(

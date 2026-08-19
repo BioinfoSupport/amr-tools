@@ -1,8 +1,8 @@
 
 process MULTIQC {
     container 'quay.io/biocontainers/multiqc:1.28--pyhdfd78af_0'
-    cpus = 2
-    memory = '2 GB'
+    cpus 2
+    memory '2 GB'
     time '1 h'
     input:
 	    tuple val(meta),path('db')

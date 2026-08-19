@@ -20,14 +20,14 @@ include { MULTIREPORT                              } from './subworkflows/multir
 
 
 
-def orgArgs = new groovy.json.JsonSlurper().parseText(file("${moduleDir}/assets/default_org_args.json").text)
-
 
 workflow AMR_ANNOT_ASSEMBLY {
 	take:
 		opts
 		asm_ch
 	main:
+
+		def orgArgs = new groovy.json.JsonSlurper().parseText(file("${moduleDir}/assets/default_org_args.json").text)
 
 		// CGE - RESFINDER
 		def resfinder_ch = RESFINDER(asm_ch.filter({!opts.resfinder.skip}),'fasta')
@@ -79,7 +79,7 @@ workflow AMR_ANNOT_ASSEMBLY {
 		if (!opts.cgemlst.skip) {
 			cgemlst_ch = asm_ch
 				.join(orgfinder_name_ch)
-				.map({m,fa,org -> arg=orgArgs[org]?:[:];[m,fa,arg.cgemlst]})
+				.map({m,fa,org -> def arg=orgArgs[org]?:[:];[m,fa,arg.cgemlst]})
 				.filter({m,fa,arg -> arg})
 				| CGEMLST
 		}
