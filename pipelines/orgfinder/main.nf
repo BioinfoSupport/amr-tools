@@ -1,0 +1,58 @@
+
+include { FASTANI } from 'modules/fastani'
+
+include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
+
+
+process ORGFINDER_DB_ADAPT {
+	input:
+		path('db')
+	output:
+		path('db/fna/*.fna'), emit: fna
+	script:
+	"""
+	"""
+}
+
+
+workflow ORGFINDER_DETECT {
+	take:
+		fa_ch   // channel: path(fasta)
+		db_ch   // channel: path(db)
+	main:
+		def query_ch = fa_ch.collect().map({[it]})
+		def ref_ch = ORGFINDER_DB_ADAPT(db_ch).fna.collect().map({[it]})
+		FASTANI(
+			query_ch
+					.combine(ref_ch)
+					.map({q, r -> tuple("orgfinder", q, r)})
+		)
+	emit:
+		res = FASTANI.out
+}
+
+
+workflow {
+	main:
+		// Validate parameters and print summary of supplied ones
+		validateParameters()
+		log.info(paramsSummaryLog(workflow))
+
+		def query_ch = Channel.fromPath(params.query).map({
+				def id = it.name.replaceAll(/\.(fasta|fna|fa)$/,'')
+				[[sample_id:id],ref,it]
+		})
+		
+	publish:
+		detected_org_txt = Channel.empty()
+}
+
+output {
+	detected_org_txt {
+		path { m,x -> x >> "${m.sample_id}.orgfinder"}
+	}
+}
+
+
+
+

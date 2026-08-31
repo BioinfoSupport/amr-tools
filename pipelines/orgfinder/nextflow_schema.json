@@ -1,0 +1,16 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+	"required": ["query"],
+	"properties": {
+
+		"query": {
+			"type": "string",
+			"format": "file-path-pattern",
+			"exists": true,
+			"pattern": "^\\S+\\.(fasta|fa|fna)$",
+			"description": "Path to FASTA file containing reference assembly contigs"
+		}
+
+	}
+}
