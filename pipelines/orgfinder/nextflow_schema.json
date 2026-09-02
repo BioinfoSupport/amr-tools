@@ -9,8 +9,17 @@
 			"format": "file-path-pattern",
 			"exists": true,
 			"pattern": "^\\S+\\.(fasta|fa|fna)$",
-			"description": "Path to FASTA file containing reference assembly contigs"
+			"description": "Path to FASTA file containing query genomes"
+		},
+		
+		"db": {
+			"type": "string",
+			"format": "file-path-pattern",
+			"exists": true,
+			"pattern": "^\\S+\\.(fasta|fa|fna)$",			
+			"description": "Path to FASTA files containing reference genomes",
+			"default": null
 		}
-
+		
 	}
 }
