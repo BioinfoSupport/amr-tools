@@ -3,7 +3,7 @@
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
 process GTF2GFF {
-	  container "registry.gitlab.unige.ch/amr-genomics/rscript:v2"
+	  container "registry.gitlab.unige.ch/amr-genomics/rscript:v3"
     memory '4 GB'
     cpus 1
     time '30 min'
@@ -18,10 +18,9 @@ process GTF2GFF {
 				source("assets/lib_gtf2gff.R")
 				rtracklayer::import.gff2("ref.gtf") %>% 
 					gtf2gff() %>% 
-					rtracklayer::export.gff3(gff,"ref.gff")
+					rtracklayer::export.gff3("ref.gff")
 				"""
 }
-
 
 
 workflow {

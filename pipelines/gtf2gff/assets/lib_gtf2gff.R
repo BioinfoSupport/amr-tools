@@ -23,8 +23,7 @@ gtf2gff <- function(gtf) {
 	genes$Parent <- NULL
 	#genes$Name <- genes$gene
 	
-	gene_names <- rtracklayer::import.gff2("../data/assembly/marion/D39.gtf") %>% 
-		mcols() %>% 
+	gene_names <- mcols(gtf) %>% 
 		as_tibble() %>% 
 		mutate(Name = gene) %>% 
 		filter(!is.na(Name)) %>% 
