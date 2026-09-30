@@ -29,7 +29,7 @@ workflow {
 
 output {
 	db {
-		path "db/"
+		path {x -> x >> "db/orgfinder_db"}
 	}
 	fastani_tsv {
 		path { m,x -> x >> "${m.sample_id}.fastani"}
