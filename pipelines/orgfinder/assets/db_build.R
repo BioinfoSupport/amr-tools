@@ -1,22 +1,46 @@
 #!/usr/bin/env Rscript
 
 base_dir <- './'
-#base_dir <- 'work/b0/dc33e2734ad3ccb0aee9dfb8b713d9'
-genomes_dir <- fs::path(base_dir,"genomes")
+#base_dir <- '/Users/prados/Documents/AMR-genomics/amr-tools/amr-tools/pipelines/orgfinder/work/55/8ecfb333fb2491cca51bca1773d3de/'
+ncbi_dir <- fs::path(base_dir,"ncbi_db")
 db_dir <- fs::path(base_dir,"output")
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Load the list of reference genome downloaded from NCBI
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 library(tidyverse)
-ss <- read_tsv(file.path(genomes_dir,"db_accession.tsv"),col_types = cols("Organism Taxonomic ID"="c")) |>
+ss <- read_tsv(file.path(ncbi_dir,"accessions.tsv"),col_types = cols("Organism Taxonomic ID"="c")) |>
 	left_join(
-		list.files(genomes_dir,"_genomic.fna$",recursive = TRUE,full.names = TRUE) |>
+		list.files(ncbi_dir,"_genomic.fna$",recursive = TRUE,full.names = TRUE) |>
 			enframe(value = "src_path",name=NULL) |>
 			mutate(`Assembly Accession`=basename(dirname(src_path)))
 	) |>
 	mutate(db_path=str_glue('fna/{`Assembly Accession`}.fna')) |>
-	mutate(db_abs_path=file.path(db_dir,db_path))
+	group_by(`Assembly Accession`) |>
+	slice_head(n=1) |>
+	ungroup()
+
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+# Add molecule type
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+function() {
+	mol_type <- read_tsv(file.path(ncbi_dir,"molecule_types.tsv"),col_names = c("Assembly Accession","contig","type"),col_types = "c") %>%
+		filter(type != "Plasmid")
+	
+	ss <- nest_join(ss,mol_type,by="Assembly Accession")
+	
+	ss %>%
+		rowwise() %>%
+		mutate({
+			dna <- Biostrings::readDNAStringSet(src_path)
+			names(dna) <- str_replace(names(dna)," .*","")
+			all(names(dna) %in% mol_type$contig)
+		})
+}
+	
+
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 # Copy the FASTA to the DB folder with appropriate renaming
@@ -54,12 +78,11 @@ tax <- read_tax(fs::path(base_dir,"extra/taxdump")) |>
 
 # Find all ancestors of selected nodes
 message("find ancestors")
-db_ancestors <- igraph::ego(tax,order=1000,nodes=igraph::V(tax)[is_db_tax],mode="in") |> 
+db_ancestors <- igraph::ego(tax,order=igraph::vcount(tax),nodes=igraph::V(tax)[is_db_tax],mode="in") |> 
 	map(~.x$tax_id) |>
 	setNames(igraph::V(tax)[is_db_tax]$tax_id) |>
 	enframe(name = "leaf_id",value = "ancestor_id") |>
 	unnest(ancestor_id)
-
 
 # Subset the taxonomy to selected elements and its ancestors
 message("subset taxonomy to selected elements")
@@ -70,7 +93,6 @@ TAX <- tax |>
 	mutate(is_db_ancestor = tax_id %in% db_ancestors$ancestor_id) |>
 	filter(is_db_ancestor)
 saveRDS(TAX,file.path(db_dir,"tax.rds"))
-
 
 # Add genus informations to the database
 DB <- db |>
