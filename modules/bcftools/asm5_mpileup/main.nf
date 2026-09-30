@@ -24,6 +24,7 @@ process BCFTOOLS_ASM5_MPILEUP {
 			  	alignment.bam \
 				| bcftools norm -Ou -m- -f "ref.fasta" \
 			  | bcftools filter -Oz -i '(FORMAT/AD[:1] >= 1)' \
+			  | bcftools +setGT -Oz -- -t a -n c:1 \
 			  > mutations.vcf.gz
 			bcftools index mutations.vcf.gz
 	    bcftools query -f "%CHROM\t%POS\t%REF>%ALT" mutations.vcf.gz > mutations.txt
