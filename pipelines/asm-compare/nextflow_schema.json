@@ -10,6 +10,14 @@
 			"pattern": "^\\S+\\.(fasta|fa|fna)$",
 			"description": "Path to FASTA file containing assembly contigs"
 		},
+		
+		"ref_gff": {
+			"type": "string",
+			"format": "file-path",
+			"exists": true,
+			"pattern": "^\\S+\\.(gff|gff3)$",
+			"description": "Path to GFF file containing reference annotation compatible with 'bcftools csq'"
+		},
 
 		"query": {
 			"type": "string",

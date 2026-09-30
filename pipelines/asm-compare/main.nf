@@ -25,7 +25,6 @@ process ROTATE_FASTA {
 				"""
 }
 
-
 workflow ROTATE_QUERIES {
 	take:
 		query_ch  // [meta, path('ref.fasta'), path('qry.fasta')]
@@ -52,6 +51,7 @@ workflow {
 		log.info(paramsSummaryLog(workflow))
 
 		def ref = file(params.ref)
+		def ref_gff = params.ref_gff ? file(params.ref_gff) : []
 		def query_ch = Channel.fromPath(params.query).map({
 				def id = it.name.replaceAll(/\.(fasta|fna|fa)$/,'')
 				[[sample_id:id],ref,it]
@@ -66,7 +66,7 @@ workflow {
 		| MINIMAP2_ALIGN_ASM5
 		
 		MINIMAP2_ALIGN_ASM5.out.bam
-		| map({meta,bam -> [meta,ref,bam]})
+		| map({meta,bam -> [meta,ref,bam,ref_gff]})
 		| BCFTOOLS_ASM5_MPILEUP
 
 		QUARTO_RENDER(
