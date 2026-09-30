@@ -1,0 +1,14 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+	"required": ["gtf"],
+	"properties": {
+		"gtf": {
+			"type": "string",
+			"format": "file-path-pattern",
+			"exists": true,
+			"pattern": "^\\S+\\.gtf(\\.gz)?$",
+			"description": "Path to a GTF file from NCBI bacterial genome to convert into GFF"
+		}
+	}
+}
