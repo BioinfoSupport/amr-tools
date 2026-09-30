@@ -7,7 +7,7 @@ include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin
 
 
 // Make the tsv file with all accession numbers
-process MAKE_DB_ACCESSION_TSV {
+process ACCESSIONS_TSV {
     container 'docker.io/staphb/ncbi-datasets:18.18.0'
     memory '8 GB'
     cpus 1
@@ -15,33 +15,36 @@ process MAKE_DB_ACCESSION_TSV {
     input:
   		path('genomes/query*')
   	output:
-  		path('genomes/')
+  		tuple(path('genomes/',type: 'dir'), path('accessions.tsv'))
     script:
 	    """
 			cat genomes/query*/ncbi_dataset/data/assembly_data_report.jsonl \
 			  | dataformat tsv genome --force --fields accession,organism-name,organism-tax-id,assmstats-total-sequence-len,assmstats-total-number-of-chromosomes \
-			  > genomes/db_accession.tsv
+			  | sort \
+			  | uniq \
+			  > accessions.tsv
 	    """
 }
 
-
-process MAKE_DB_MOLECULE_TYPE_TSV {
-    container 'community.wave.seqera.io/library/fastp:1.0.1--c8b87fe62dcc103c'
+process MOLECULE_TYPES_TSV {
+    container 'registry.gitlab.unige.ch/amr-genomics/rscript:v3'
     memory '2 GB'
     cpus 1
     time '30 min'
     input:
-  		path('genomes/query*')
+  		tuple(path('ncbi_db/genomes'),path('ncbi_db/accessions.tsv'))
   	output:
-  		path('genomes/')
+  		path('ncbi_db/',type: 'dir')
     script:
 	    """
-			jq -r '(.assemblyAccession + ":" + .chrName + "" + .assignedMoleculeLocationType)' genomes/query*/ncbi_dataset/data/*/sequence_report.jsonl \
-			> genomes/assigned_molecule_types.tsv
+			jq -r '[.assemblyAccession, .chrName, .assignedMoleculeLocationType] | @tsv' ncbi_db/genomes/query*/ncbi_dataset/data/*/sequence_report.jsonl \
+			| sort \
+			| uniq \
+			> ncbi_db/molecule_types.tsv
 	    """
 }
 
-workflow ORGFINDER_DB_DOWNLOAD {
+workflow ORGFINDER_DB {
 	main:
 		def taxdump = NCBI_TAXDUMP_DOWNLOAD()
 		def genomes_ch = Channel.of(
@@ -54,17 +57,21 @@ workflow ORGFINDER_DB_DOWNLOAD {
 			"taxon 'Aeromonas'               --reference --assembly-level complete --include genome,seq-report",
 			"taxon 'Myroides'                --reference --assembly-level complete --include genome,seq-report",
 			"taxon 'Enterococcus faecalis'   --reference --include genome,seq-report",
-			"taxon 'Citrobacter murliniae'   --reference --include genome,seq-report"
+			"taxon 'Citrobacter murliniae'   --reference --include genome,seq-report",
+			'accession GCA_040096145.1', //E. intestinihominis	3133180	GCA_040096145.1	Genome of type strain CLA-AC-H004ᵀ
+			'accession GCA_001875655.1', //E. hormaechei subsp. hormaechei	301105 / parent 158836	GCA_001875655.1	Genome of species type strain ATCC 49162ᵀ
+			'accession GCA_001729745.1', //E. hormaechei subsp. hoffmannii	1812934	GCA_001729745.1	Complete genome of type strain DSM 14563ᵀ
+			'accession GCF_048568405.1', //E. intestinihominis RefSeq representative	3133180	GCF_048568405.1	Our current reference
+			'accession GCF_019048245.1'  //E. hormaechei RefSeq representative	158836	GCF_019048245.1	Our current reference
 		)
 		| NCBI_DATASET_DOWNLOAD_GENOME
 		
-		genomes_ch = genomes_ch.collect()
-		| MAKE_DB_ACCESSION_TSV
-		| MAKE_DB_MOLECULE_TYPE_TSV
-		| map({["all_collected_genomes",it]})
+		def db_ch = genomes_ch
+			.collect()
+			| ACCESSIONS_TSV
+			| MOLECULE_TYPES_TSV
 
-		
-		RSCRIPT(genomes_ch,file("${moduleDir}/assets/db_build.R"),taxdump)
+		RSCRIPT(db_ch.map({["all",it]}),file("${moduleDir}/assets/db_build.R"),taxdump)
 	emit:
 		db = RSCRIPT.out.map({it[1]})
 }
@@ -76,23 +83,28 @@ workflow {
 		validateParameters()
 		log.info(paramsSummaryLog(workflow))
 
+		ORGFINDER_DB()
+
 		def query_ch = Channel.fromPath(params.query).map({
 				def id = it.name.replaceAll(/\.(fasta|fna|fa)$/,'')
 				[[sample_id:id],it]
 		})
 
-		def ref_ch = Channel.fromPath(params.db).collect().map({[it]})
+		def ref_ch = Channel.fromPath(params.ref).collect().map({[it]})
 		query_ch
 				.combine(ref_ch)
 				.map({m, q, r -> tuple(m, q, r)})
 				| FASTANI
-		
-		
+
 	publish:
 		fastani_tsv = FASTANI.out
+		db = ORGFINDER_DB.out
 }
 
 output {
+	db {
+		path "db/"
+	}
 	fastani_tsv {
 		path { m,x -> x >> "${m.sample_id}.fastani"}
 	}
